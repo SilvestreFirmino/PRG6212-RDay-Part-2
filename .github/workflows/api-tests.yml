@@ -1,0 +1,31 @@
+name: Build and test RaceDay API
+
+on:
+  push:
+    paths:
+      - 'RaceDayApi/**'
+      - 'RaceDayApi.Tests/**'
+      - 'RaceDay.sln'
+      - '.github/workflows/api-tests.yml'
+  pull_request:
+    paths:
+      - 'RaceDayApi/**'
+      - 'RaceDayApi.Tests/**'
+      - 'RaceDay.sln'
+      - '.github/workflows/api-tests.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up .NET 6
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+      - name: Restore dependencies
+        run: dotnet restore RaceDay.sln
+      - name: Build API
+        run: dotnet build RaceDay.sln --configuration Release --no-restore
+      - name: Run unit tests
+        run: dotnet test RaceDay.sln --configuration Release --no-build --verbosity normal
