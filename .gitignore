@@ -4,3 +4,8 @@ work/
 Thumbs.db
 *.log
 
+# .NET build output and local deliverables
+**/bin/
+**/obj/
+output/
+tmp/
