@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
@@ -8,7 +7,6 @@ using RaceDayApi.Services;
 
 namespace RaceDayApi.Controllers;
 
-[Authorize]
 [Route("api/profile")]
 public class ProfileController : ApiControllerBase
 {
@@ -19,6 +17,7 @@ public class ProfileController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<object>> Get()
     {
+        if (!LoggedIn()) return Unauthorized("Please log in first.");
         var user = await _db.Users.Include(u => u.ParticipantProfile).SingleOrDefaultAsync(u => u.UserId == CurrentUserId);
         return user is null ? NotFound() : Ok(new { user.UserId, user.Email, user.FirstName, user.LastName, user.PhoneNumber, user.Role, user.IsActive, participantProfile = user.ParticipantProfile });
     }
@@ -26,6 +25,7 @@ public class ProfileController : ApiControllerBase
     [HttpPut]
     public async Task<IActionResult> Update(ProfileUpdateRequest request)
     {
+        if (!LoggedIn()) return Unauthorized("Please log in first.");
         var user = await _db.Users.Include(u => u.ParticipantProfile).SingleOrDefaultAsync(u => u.UserId == CurrentUserId);
         if (user is null) return NotFound();
         user.FirstName = request.FirstName.Trim(); user.LastName = request.LastName.Trim(); user.PhoneNumber = request.PhoneNumber?.Trim(); user.UpdatedAtUtc = DateTime.UtcNow;
@@ -39,6 +39,7 @@ public class ProfileController : ApiControllerBase
     [HttpPut("email")]
     public async Task<IActionResult> ChangeEmail(EmailUpdateRequest request)
     {
+        if (!LoggedIn()) return Unauthorized("Please log in first.");
         var user = await _db.Users.SingleOrDefaultAsync(u => u.UserId == CurrentUserId);
         if (user is null || !_passwords.Verify(request.CurrentPassword, user.PasswordHash)) return Unauthorized("Current password is invalid.");
         string email = request.NewEmail.Trim().ToLowerInvariant();
@@ -49,6 +50,7 @@ public class ProfileController : ApiControllerBase
     [HttpPut("password")]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
     {
+        if (!LoggedIn()) return Unauthorized("Please log in first.");
         var user = await _db.Users.SingleOrDefaultAsync(u => u.UserId == CurrentUserId);
         if (user is null || !_passwords.Verify(request.CurrentPassword, user.PasswordHash)) return Unauthorized("Current password is invalid.");
         user.PasswordHash = _passwords.Hash(request.NewPassword); user.UpdatedAtUtc = DateTime.UtcNow; await _db.SaveChangesAsync(); return NoContent();

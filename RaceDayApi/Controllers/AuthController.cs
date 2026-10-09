@@ -12,12 +12,10 @@ public class AuthController : ApiControllerBase
 {
     private readonly RaceDayDbContext _db;
     private readonly PasswordService _passwords;
-    private readonly JwtTokenService _tokens;
-    public AuthController(RaceDayDbContext db, PasswordService passwords, JwtTokenService tokens) => (_db, _passwords, _tokens) = (db, passwords, tokens);
+    public AuthController(RaceDayDbContext db, PasswordService passwords) => (_db, _passwords) = (db, passwords);
 
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
+    public async Task<ActionResult> Register(RegisterRequest request)
     {
         string role = request.Role.Trim();
         if (role != Roles.Organiser && role != Roles.Participant) return BadRequest("Role must be Organiser or Participant.");
@@ -33,16 +31,27 @@ public class AuthController : ApiControllerBase
         }
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(Login), _tokens.Create(user));
+        return Ok("User registered successfully.");
     }
 
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
+    public async Task<ActionResult> Login(LoginRequest request)
     {
         string email = request.Email.Trim().ToLowerInvariant();
         var user = await _db.Users.SingleOrDefaultAsync(u => u.Email == email);
-        if (user is null || !user.IsActive || !_passwords.Verify(request.Password, user.PasswordHash)) return Unauthorized("Invalid credentials.");
-        return Ok(_tokens.Create(user));
+        if (user is null || !user.IsActive || !_passwords.Verify(request.Password, user.PasswordHash)) return Unauthorized("Incorrect email or password.");
+
+        // Save the user's details in the session. Other controllers read these values.
+        HttpContext.Session.SetInt32("UserId", user.UserId);
+        HttpContext.Session.SetString("Role", user.Role);
+        HttpContext.Session.SetString("UserName", user.FirstName);
+        return Ok($"Welcome {user.FirstName}. You are logged in as {user.Role}.");
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        HttpContext.Session.Clear();
+        return Ok("You are logged out.");
     }
 }

@@ -5,6 +5,7 @@ namespace RaceDayApi.Services;
 
 public class PasswordService
 {
+    // The database stores this hash, never the real password.
     public string Hash(string password)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(16);
