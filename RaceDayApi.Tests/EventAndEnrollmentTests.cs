@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RaceDayApi.Controllers;
 using RaceDayApi.DTOs;
@@ -21,10 +20,13 @@ public class EventAndEnrollmentTests
     }
 
     [Fact]
-    public void Event_management_requires_organiser_role()
+    public async Task Event_management_rejects_a_participant()
     {
-        var attribute = typeof(EventsController).GetMethod(nameof(EventsController.Create))!.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>().Single();
-        Assert.Equal(Roles.Organiser, attribute.Roles);
+        await using var db = TestHelpers.Database();
+        var controller = new EventsController(db); TestHelpers.SetUser(controller, 2, Roles.Participant);
+        var request = new EventRequest { Name = "Test", Description = "Test", EventType = "Running", StartDateTime = DateTime.UtcNow.AddDays(1), EndDateTime = DateTime.UtcNow.AddDays(2), VenueName = "Park", AddressLine1 = "Road", City = "Cape Town", Province = "Western Cape", RegistrationOpenUtc = DateTime.UtcNow, RegistrationCloseUtc = DateTime.UtcNow.AddHours(1) };
+        var result = await controller.Create(request);
+        Assert.IsType<UnauthorizedObjectResult>(result.Result);
     }
 
     [Fact]
