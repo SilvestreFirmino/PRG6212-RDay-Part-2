@@ -44,13 +44,13 @@ All entity inserts run inside transactions with `XACT_ABORT ON`, and post-deploy
 
 ## Part 2 API setup and run instructions
 
-The Part 2 ASP.NET Core Web API is in [`RaceDayApi`](RaceDayApi). It uses Entity Framework Core Code First, SQL Server, JWT authentication, Swagger, and xUnit tests.
+The Part 2 ASP.NET Core Web API is in [`RaceDayApi`](RaceDayApi). It uses Entity Framework Core Code First, SQL Server, session-based authentication, Swagger, and xUnit tests.
 
 1. Open `RaceDay.sln` in Visual Studio 2022.
 2. Set `RaceDayApi` as the startup project.
 3. In `RaceDayApi/appsettings.json`, confirm the `RaceDayDatabase` connection string points to your LocalDB or SQL Server instance. Replace the development JWT key before deploying publicly.
 4. Open a terminal in the repository and run `dotnet tool restore`, then `dotnet ef database update --project RaceDayApi --startup-project RaceDayApi`.
-5. Run the API. Swagger opens at `/swagger`, where you can register, log in, use the returned bearer token through **Authorize**, and test all documented routes.
+5. Run the API. Swagger opens at `/swagger`. Register an account, use the login endpoint, then test the role-protected routes in the same browser session.
 6. Run the test suite with `dotnet test RaceDay.sln`.
 
 ## CI/CD validation
