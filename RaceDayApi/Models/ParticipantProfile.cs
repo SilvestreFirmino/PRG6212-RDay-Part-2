@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace RaceDayApi.Models;
 
@@ -12,5 +13,6 @@ public class ParticipantProfile
     [Required, MaxLength(20)] public string EmergencyContactPhone { get; set; } = string.Empty;
     [MaxLength(500)] public string? MedicalNotes { get; set; }
     [MaxLength(120)] public string? ClubName { get; set; }
+    [JsonIgnore]
     public User? User { get; set; }
 }

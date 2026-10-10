@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace RaceDayApi.Models;
 
@@ -14,6 +15,9 @@ public class RaceResult
     [MaxLength(500)] public string? Notes { get; set; }
     public DateTime RecordedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }
+    [JsonIgnore]
     public EventEnrollment? Enrollment { get; set; }
+
+    [JsonIgnore]
     public User? RecordedByOrganiser { get; set; }
 }

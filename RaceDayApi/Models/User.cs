@@ -23,7 +23,12 @@ public class User
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }
     public ParticipantProfile? ParticipantProfile { get; set; }
+    [JsonIgnore]
     public ICollection<RaceEvent> OrganisedEvents { get; set; } = new List<RaceEvent>();
+
+    [JsonIgnore]
     public ICollection<EventEnrollment> Enrollments { get; set; } = new List<EventEnrollment>();
+
+    [JsonIgnore]
     public ICollection<RaceResult> RecordedResults { get; set; } = new List<RaceResult>();
 }

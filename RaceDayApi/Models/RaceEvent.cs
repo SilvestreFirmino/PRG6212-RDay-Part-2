@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace RaceDayApi.Models;
 
@@ -22,7 +23,12 @@ public class RaceEvent
     [Required, MaxLength(20)] public string Status { get; set; } = "Draft";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }
+    [JsonIgnore]
     public User? Organiser { get; set; }
+
+    [JsonIgnore]
     public ICollection<Category> Categories { get; set; } = new List<Category>();
+
+    [JsonIgnore]
     public ICollection<EventEnrollment> Enrollments { get; set; } = new List<EventEnrollment>();
 }

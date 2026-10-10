@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace RaceDayApi.Models;
 
@@ -15,6 +16,9 @@ public class Category
     public int? MaximumAge { get; set; }
     public TimeSpan? CategoryStartTime { get; set; }
     public bool IsActive { get; set; } = true;
+    [JsonIgnore]
     public RaceEvent? Event { get; set; }
+
+    [JsonIgnore]
     public ICollection<EventEnrollment> Enrollments { get; set; } = new List<EventEnrollment>();
 }

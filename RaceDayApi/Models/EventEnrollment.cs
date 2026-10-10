@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace RaceDayApi.Models;
 
@@ -15,8 +16,15 @@ public class EventEnrollment
     public bool EmergencyConsent { get; set; }
     public DateTime EnrolledAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }
+    [JsonIgnore]
     public RaceEvent? Event { get; set; }
+
+    [JsonIgnore]
     public Category? Category { get; set; }
+
+    [JsonIgnore]
     public User? Participant { get; set; }
+
+    [JsonIgnore]
     public RaceResult? Result { get; set; }
 }
