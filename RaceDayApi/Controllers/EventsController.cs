@@ -17,20 +17,20 @@ public class EventsController : ApiControllerBase
 
     // Anyone can see published and completed events.
     [HttpGet]
-    public async Task<IActionResult> GetEvents()
+    public IActionResult GetEvents()
     {
-        List<RaceEvent> events = await _db.Events
+        List<RaceEvent> events = _db.Events
             .Where(e => e.Status == "Published" || e.Status == "Completed")
             .OrderBy(e => e.StartDateTime)
-            .ToListAsync();
+            .ToList();
 
         return Ok(events);
     }
 
     [HttpGet("{eventId}")]
-    public async Task<IActionResult> GetEvent(int eventId)
+    public IActionResult GetEvent(int eventId)
     {
-        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+        RaceEvent? raceEvent = _db.Events.Find(eventId);
 
         if (raceEvent == null)
         {
@@ -42,22 +42,22 @@ public class EventsController : ApiControllerBase
 
     // An organiser can see all their events, including drafts.
     [HttpGet("mine")]
-    public async Task<IActionResult> GetMyEvents()
+    public IActionResult GetMyEvents()
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can view their events.");
         }
 
-        List<RaceEvent> events = await _db.Events
+        List<RaceEvent> events = _db.Events
             .Where(e => e.OrganiserId == CurrentUserId)
-            .ToListAsync();
+            .ToList();
 
         return Ok(events);
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateEvent(RaceEvent raceEvent)
+    public IActionResult CreateEvent(RaceEvent raceEvent)
     {
         if (!IsOrganiser())
         {
@@ -76,20 +76,20 @@ public class EventsController : ApiControllerBase
         raceEvent.CreatedAtUtc = DateTime.UtcNow;
 
         _db.Events.Add(raceEvent);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("Event created successfully.");
     }
 
     [HttpPut("{eventId}")]
-    public async Task<IActionResult> UpdateEvent(int eventId, RaceEvent newDetails)
+    public IActionResult UpdateEvent(int eventId, RaceEvent newDetails)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update events.");
         }
 
-        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+        RaceEvent? raceEvent = _db.Events.Find(eventId);
 
         if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
         {
@@ -121,19 +121,19 @@ public class EventsController : ApiControllerBase
         raceEvent.RegistrationCloseUtc = newDetails.RegistrationCloseUtc;
         raceEvent.UpdatedAtUtc = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
         return Ok("Event updated successfully.");
     }
 
     [HttpPut("{eventId}/status")]
-    public async Task<IActionResult> ChangeStatus(int eventId, StatusChange newStatus)
+    public IActionResult ChangeStatus(int eventId, StatusChange newStatus)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can change event status.");
         }
 
-        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+        RaceEvent? raceEvent = _db.Events.Find(eventId);
 
         if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
         {
@@ -148,20 +148,20 @@ public class EventsController : ApiControllerBase
 
         raceEvent.Status = newStatus.Status;
         raceEvent.UpdatedAtUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("Event status changed successfully.");
     }
 
     [HttpDelete("{eventId}")]
-    public async Task<IActionResult> DeleteEvent(int eventId)
+    public IActionResult DeleteEvent(int eventId)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can delete events.");
         }
 
-        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+        RaceEvent? raceEvent = _db.Events.Find(eventId);
 
         if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
         {
@@ -174,7 +174,7 @@ public class EventsController : ApiControllerBase
         }
 
         _db.Events.Remove(raceEvent);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("Event deleted successfully.");
     }

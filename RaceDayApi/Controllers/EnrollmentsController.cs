@@ -16,7 +16,7 @@ public class EnrollmentsController : ApiControllerBase
     }
 
     [HttpPost("events/{eventId}/enrollments")]
-    public async Task<IActionResult> Enrol(int eventId, EventEnrollment enrollment)
+    public IActionResult Enrol(int eventId, EventEnrollment enrollment)
     {
         if (!IsParticipant())
         {
@@ -28,8 +28,8 @@ public class EnrollmentsController : ApiControllerBase
             return BadRequest("Emergency consent is required.");
         }
 
-        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
-        Category? category = await _db.Categories.FindAsync(enrollment.CategoryId);
+        RaceEvent? raceEvent = _db.Events.Find(eventId);
+        Category? category = _db.Categories.Find(enrollment.CategoryId);
 
         if (raceEvent == null || category == null || category.EventId != eventId)
         {
@@ -46,7 +46,7 @@ public class EnrollmentsController : ApiControllerBase
             return BadRequest("Registration is currently closed.");
         }
 
-        bool alreadyEntered = await _db.EventEnrollments.AnyAsync(e =>
+        bool alreadyEntered = _db.EventEnrollments.Any(e =>
             e.EventId == eventId && e.ParticipantId == CurrentUserId);
 
         if (alreadyEntered)
@@ -54,7 +54,7 @@ public class EnrollmentsController : ApiControllerBase
             return BadRequest("You are already entered for this event.");
         }
 
-        int numberOfEntries = await _db.EventEnrollments.CountAsync(e =>
+        int numberOfEntries = _db.EventEnrollments.Count(e =>
             e.CategoryId == category.CategoryId && e.Status != "Withdrawn");
 
         if (numberOfEntries >= category.Capacity)
@@ -72,48 +72,48 @@ public class EnrollmentsController : ApiControllerBase
         enrollment.EnrolledAtUtc = DateTime.UtcNow;
 
         _db.EventEnrollments.Add(enrollment);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("Event entry recorded successfully.");
     }
 
     [HttpGet("enrollments/me")]
-    public async Task<IActionResult> GetMyEnrolments()
+    public IActionResult GetMyEnrolments()
     {
         if (!IsParticipant())
         {
             return Unauthorized("Only participants can view their enrolments.");
         }
 
-        List<EventEnrollment> enrolments = await _db.EventEnrollments
+        List<EventEnrollment> enrolments = _db.EventEnrollments
             .Include(e => e.Event)
             .Include(e => e.Category)
             .Where(e => e.ParticipantId == CurrentUserId)
-            .ToListAsync();
+            .ToList();
 
         return Ok(enrolments);
     }
 
     [HttpGet("events/{eventId}/enrollments")]
-    public async Task<IActionResult> GetEventEnrolments(int eventId)
+    public IActionResult GetEventEnrolments(int eventId)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can view event enrolments.");
         }
 
-        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+        RaceEvent? raceEvent = _db.Events.Find(eventId);
 
         if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
         {
             return NotFound("Your event was not found.");
         }
 
-        List<EventEnrollment> enrolments = await _db.EventEnrollments
+        List<EventEnrollment> enrolments = _db.EventEnrollments
             .Include(e => e.Participant)
             .Include(e => e.Category)
             .Where(e => e.EventId == eventId)
-            .ToListAsync();
+            .ToList();
 
         return Ok(enrolments);
     }

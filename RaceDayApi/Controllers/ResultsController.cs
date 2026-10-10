@@ -16,44 +16,44 @@ public class ResultsController : ApiControllerBase
     }
 
     [HttpGet("events/{eventId}/results")]
-    public async Task<IActionResult> GetResults(int eventId)
+    public IActionResult GetResults(int eventId)
     {
-        List<RaceResult> results = await _db.Results
+        List<RaceResult> results = _db.Results
             .Include(r => r.Enrollment)
             .Where(r => r.Enrollment != null && r.Enrollment.EventId == eventId)
             .OrderBy(r => r.OverallPosition)
-            .ToListAsync();
+            .ToList();
 
         return Ok(results);
     }
 
     [HttpGet("results/me")]
-    public async Task<IActionResult> GetMyResults()
+    public IActionResult GetMyResults()
     {
         if (!IsParticipant())
         {
             return Unauthorized("Only participants can view their results.");
         }
 
-        List<RaceResult> results = await _db.Results
+        List<RaceResult> results = _db.Results
             .Include(r => r.Enrollment)
             .Where(r => r.Enrollment != null && r.Enrollment.ParticipantId == CurrentUserId)
-            .ToListAsync();
+            .ToList();
 
         return Ok(results);
     }
 
     [HttpPost("enrollments/{enrollmentId}/result")]
-    public async Task<IActionResult> CreateResult(int enrollmentId, RaceResult result)
+    public IActionResult CreateResult(int enrollmentId, RaceResult result)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can capture results.");
         }
 
-        EventEnrollment? enrollment = await _db.EventEnrollments
+        EventEnrollment? enrollment = _db.EventEnrollments
             .Include(e => e.Event)
-            .FirstOrDefaultAsync(e => e.EnrollmentId == enrollmentId);
+            .FirstOrDefault(e => e.EnrollmentId == enrollmentId);
 
         if (enrollment == null || enrollment.Event == null || enrollment.Event.OrganiserId != CurrentUserId)
         {
@@ -65,7 +65,7 @@ public class ResultsController : ApiControllerBase
             return BadRequest("Complete the event before capturing results.");
         }
 
-        if (await _db.Results.AnyAsync(r => r.EnrollmentId == enrollmentId))
+        if (_db.Results.Any(r => r.EnrollmentId == enrollmentId))
         {
             return BadRequest("This enrolment already has a result.");
         }
@@ -82,23 +82,23 @@ public class ResultsController : ApiControllerBase
         result.RecordedAtUtc = DateTime.UtcNow;
 
         _db.Results.Add(result);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("Result captured successfully.");
     }
 
     [HttpPut("results/{resultId}")]
-    public async Task<IActionResult> UpdateResult(int resultId, RaceResult newDetails)
+    public IActionResult UpdateResult(int resultId, RaceResult newDetails)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update results.");
         }
 
-        RaceResult? result = await _db.Results
+        RaceResult? result = _db.Results
             .Include(r => r.Enrollment)
             .ThenInclude(e => e!.Event)
-            .FirstOrDefaultAsync(r => r.ResultId == resultId);
+            .FirstOrDefault(r => r.ResultId == resultId);
 
         if (result == null || result.Enrollment == null || result.Enrollment.Event == null ||
             result.Enrollment.Event.OrganiserId != CurrentUserId)
@@ -113,7 +113,7 @@ public class ResultsController : ApiControllerBase
         result.Notes = newDetails.Notes;
         result.UpdatedAtUtc = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
         return Ok("Result updated successfully.");
     }
 }

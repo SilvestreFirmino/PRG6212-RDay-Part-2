@@ -16,24 +16,24 @@ public class CategoriesController : ApiControllerBase
     }
 
     [HttpGet("events/{eventId}/categories")]
-    public async Task<IActionResult> GetCategories(int eventId)
+    public IActionResult GetCategories(int eventId)
     {
-        List<Category> categories = await _db.Categories
+        List<Category> categories = _db.Categories
             .Where(c => c.EventId == eventId && c.IsActive)
-            .ToListAsync();
+            .ToList();
 
         return Ok(categories);
     }
 
     [HttpPost("events/{eventId}/categories")]
-    public async Task<IActionResult> CreateCategory(int eventId, Category category)
+    public IActionResult CreateCategory(int eventId, Category category)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can create categories.");
         }
 
-        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+        RaceEvent? raceEvent = _db.Events.Find(eventId);
 
         if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
         {
@@ -48,21 +48,21 @@ public class CategoriesController : ApiControllerBase
         category.CategoryId = 0;
         category.EventId = eventId;
         _db.Categories.Add(category);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("Category created successfully.");
     }
 
     [HttpPut("categories/{categoryId}")]
-    public async Task<IActionResult> UpdateCategory(int categoryId, Category newDetails)
+    public IActionResult UpdateCategory(int categoryId, Category newDetails)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update categories.");
         }
 
-        Category? category = await _db.Categories.Include(c => c.Event)
-            .FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+        Category? category = _db.Categories.Include(c => c.Event)
+            .FirstOrDefault(c => c.CategoryId == categoryId);
 
         if (category == null || category.Event == null || category.Event.OrganiserId != CurrentUserId)
         {
@@ -79,34 +79,34 @@ public class CategoriesController : ApiControllerBase
         category.CategoryStartTime = newDetails.CategoryStartTime;
         category.IsActive = newDetails.IsActive;
 
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
         return Ok("Category updated successfully.");
     }
 
     [HttpDelete("categories/{categoryId}")]
-    public async Task<IActionResult> DeleteCategory(int categoryId)
+    public IActionResult DeleteCategory(int categoryId)
     {
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can delete categories.");
         }
 
-        Category? category = await _db.Categories.Include(c => c.Event)
-            .FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+        Category? category = _db.Categories.Include(c => c.Event)
+            .FirstOrDefault(c => c.CategoryId == categoryId);
 
         if (category == null || category.Event == null || category.Event.OrganiserId != CurrentUserId)
         {
             return NotFound("Your category was not found.");
         }
 
-        bool hasEnrolments = await _db.EventEnrollments.AnyAsync(e => e.CategoryId == categoryId);
+        bool hasEnrolments = _db.EventEnrollments.Any(e => e.CategoryId == categoryId);
         if (hasEnrolments)
         {
             return BadRequest("A category with enrolments cannot be deleted.");
         }
 
         _db.Categories.Remove(category);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("Category deleted successfully.");
     }

@@ -19,7 +19,7 @@ public class AuthController : ApiControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(User user)
+    public IActionResult Register(User user)
     {
         // Check the two roles that are allowed in RaceDay.
         if (user.Role != Roles.Organiser && user.Role != Roles.Participant)
@@ -39,7 +39,7 @@ public class AuthController : ApiControllerBase
 
         user.Email = user.Email.Trim().ToLower();
 
-        if (await _db.Users.AnyAsync(u => u.Email == user.Email))
+        if (_db.Users.Any(u => u.Email == user.Email))
         {
             return Conflict("This email address is already registered.");
         }
@@ -52,16 +52,16 @@ public class AuthController : ApiControllerBase
         user.CreatedAtUtc = DateTime.UtcNow;
 
         _db.Users.Add(user);
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
 
         return Ok("User registered successfully.");
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDetails login)
+    public IActionResult Login(LoginDetails login)
     {
         string email = login.Email.Trim().ToLower();
-        User? user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        User? user = _db.Users.FirstOrDefault(u => u.Email == email);
 
         if (user == null || !user.IsActive || !_passwords.Verify(login.Password, user.PasswordHash))
         {

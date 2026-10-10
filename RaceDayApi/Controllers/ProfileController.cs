@@ -16,15 +16,15 @@ public class ProfileController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetProfile()
+    public IActionResult GetProfile()
     {
         if (!LoggedIn())
         {
             return Unauthorized("Please log in first.");
         }
 
-        User? user = await _db.Users.Include(u => u.ParticipantProfile)
-            .FirstOrDefaultAsync(u => u.UserId == CurrentUserId);
+        User? user = _db.Users.Include(u => u.ParticipantProfile)
+            .FirstOrDefault(u => u.UserId == CurrentUserId);
 
         if (user == null)
         {
@@ -35,15 +35,15 @@ public class ProfileController : ApiControllerBase
     }
 
     [HttpPut]
-    public async Task<IActionResult> UpdateProfile(User newDetails)
+    public IActionResult UpdateProfile(User newDetails)
     {
         if (!LoggedIn())
         {
             return Unauthorized("Please log in first.");
         }
 
-        User? user = await _db.Users.Include(u => u.ParticipantProfile)
-            .FirstOrDefaultAsync(u => u.UserId == CurrentUserId);
+        User? user = _db.Users.Include(u => u.ParticipantProfile)
+            .FirstOrDefault(u => u.UserId == CurrentUserId);
 
         if (user == null)
         {
@@ -66,7 +66,7 @@ public class ProfileController : ApiControllerBase
             user.ParticipantProfile.ClubName = newDetails.ParticipantProfile.ClubName;
         }
 
-        await _db.SaveChangesAsync();
+        _db.SaveChanges();
         return Ok("Profile updated successfully.");
     }
 }
