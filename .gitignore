@@ -7,5 +7,6 @@ Thumbs.db
 # .NET build output and local deliverables
 **/bin/
 **/obj/
+.vs/
 output/
 tmp/
