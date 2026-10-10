@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
-using RaceDayApi.DTOs;
 using RaceDayApi.Models;
 
 namespace RaceDayApi.Controllers;
@@ -10,77 +9,173 @@ namespace RaceDayApi.Controllers;
 public class EventsController : ApiControllerBase
 {
     private readonly RaceDayDbContext _db;
-    public EventsController(RaceDayDbContext db) => _db = db;
 
+    public EventsController(RaceDayDbContext db)
+    {
+        _db = db;
+    }
+
+    // Anyone can see published and completed events.
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<RaceEvent>>> GetAll([FromQuery] string? search, [FromQuery] string? eventType, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetEvents()
     {
-        var query = _db.Events.Include(e => e.Categories).Where(e => e.Status == "Published" || e.Status == "Completed").AsQueryable();
-        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(e => e.Name.Contains(search));
-        if (!string.IsNullOrWhiteSpace(eventType)) query = query.Where(e => e.EventType == eventType);
-        page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
-        return Ok(await query.OrderBy(e => e.StartDateTime).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync());
+        List<RaceEvent> events = await _db.Events
+            .Where(e => e.Status == "Published" || e.Status == "Completed")
+            .OrderBy(e => e.StartDateTime)
+            .ToListAsync();
+
+        return Ok(events);
     }
 
-    [HttpGet("{eventId:int}")]
-    public async Task<ActionResult<RaceEvent>> Get(int eventId)
+    [HttpGet("{eventId}")]
+    public async Task<IActionResult> GetEvent(int eventId)
     {
-        var item = await _db.Events.Include(e => e.Categories).SingleOrDefaultAsync(e => e.EventId == eventId && (e.Status == "Published" || e.Status == "Completed"));
-        return item is null ? NotFound() : Ok(item);
+        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+
+        if (raceEvent == null)
+        {
+            return NotFound("Event not found.");
+        }
+
+        return Ok(raceEvent);
     }
 
+    // An organiser can see all their events, including drafts.
     [HttpGet("mine")]
-    public async Task<ActionResult<IEnumerable<RaceEvent>>> Mine()
+    public async Task<IActionResult> GetMyEvents()
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can view their events.");
-        return Ok(await _db.Events.Where(e => e.OrganiserId == CurrentUserId).OrderByDescending(e => e.CreatedAtUtc).ToListAsync());
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can view their events.");
+        }
+
+        List<RaceEvent> events = await _db.Events
+            .Where(e => e.OrganiserId == CurrentUserId)
+            .ToListAsync();
+
+        return Ok(events);
     }
 
     [HttpPost]
-    public async Task<ActionResult<RaceEvent>> Create(EventRequest request)
+    public async Task<IActionResult> CreateEvent(RaceEvent raceEvent)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can create events.");
-        if (request.EndDateTime <= request.StartDateTime || request.RegistrationCloseUtc <= request.RegistrationOpenUtc) return BadRequest("Dates are invalid.");
-        var item = new RaceEvent { OrganiserId = CurrentUserId, Name = request.Name.Trim(), Description = request.Description.Trim(), EventType = request.EventType.Trim(), StartDateTime = request.StartDateTime, EndDateTime = request.EndDateTime, TimeZoneId = request.TimeZoneId.Trim(), VenueName = request.VenueName.Trim(), AddressLine1 = request.AddressLine1.Trim(), City = request.City.Trim(), Province = request.Province.Trim(), PostalCode = request.PostalCode?.Trim(), RegistrationOpenUtc = request.RegistrationOpenUtc, RegistrationCloseUtc = request.RegistrationCloseUtc };
-        _db.Events.Add(item); await _db.SaveChangesAsync(); return CreatedAtAction(nameof(GetOwned), new { eventId = item.EventId }, item);
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can create events.");
+        }
+
+        if (raceEvent.EndDateTime <= raceEvent.StartDateTime)
+        {
+            return BadRequest("The end date must be after the start date.");
+        }
+
+        // The organiser ID comes from the session, not from the request body.
+        raceEvent.EventId = 0;
+        raceEvent.OrganiserId = CurrentUserId;
+        raceEvent.Status = "Draft";
+        raceEvent.CreatedAtUtc = DateTime.UtcNow;
+
+        _db.Events.Add(raceEvent);
+        await _db.SaveChangesAsync();
+
+        return Ok("Event created successfully.");
     }
 
-    [HttpGet("owned/{eventId:int}")]
-    public async Task<ActionResult<RaceEvent>> GetOwned(int eventId)
+    [HttpPut("{eventId}")]
+    public async Task<IActionResult> UpdateEvent(int eventId, RaceEvent newDetails)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can view this event.");
-        var item = await _db.Events.Include(e => e.Categories).SingleOrDefaultAsync(e => e.EventId == eventId && e.OrganiserId == CurrentUserId);
-        return item is null ? NotFound() : Ok(item);
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can update events.");
+        }
+
+        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+
+        if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your event was not found.");
+        }
+
+        if (raceEvent.Status == "Completed" || raceEvent.Status == "Cancelled")
+        {
+            return BadRequest("A completed or cancelled event cannot be changed.");
+        }
+
+        if (newDetails.EndDateTime <= newDetails.StartDateTime)
+        {
+            return BadRequest("The end date must be after the start date.");
+        }
+
+        raceEvent.Name = newDetails.Name;
+        raceEvent.Description = newDetails.Description;
+        raceEvent.EventType = newDetails.EventType;
+        raceEvent.StartDateTime = newDetails.StartDateTime;
+        raceEvent.EndDateTime = newDetails.EndDateTime;
+        raceEvent.TimeZoneId = newDetails.TimeZoneId;
+        raceEvent.VenueName = newDetails.VenueName;
+        raceEvent.AddressLine1 = newDetails.AddressLine1;
+        raceEvent.City = newDetails.City;
+        raceEvent.Province = newDetails.Province;
+        raceEvent.PostalCode = newDetails.PostalCode;
+        raceEvent.RegistrationOpenUtc = newDetails.RegistrationOpenUtc;
+        raceEvent.RegistrationCloseUtc = newDetails.RegistrationCloseUtc;
+        raceEvent.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return Ok("Event updated successfully.");
     }
 
-    [HttpPut("{eventId:int}")]
-    public async Task<IActionResult> Update(int eventId, EventRequest request)
+    [HttpPut("{eventId}/status")]
+    public async Task<IActionResult> ChangeStatus(int eventId, StatusChange newStatus)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can update events.");
-        var item = await Owned(eventId); if (item is null) return NotFound();
-        if (item.Status is "Completed" or "Cancelled" || request.EndDateTime <= request.StartDateTime) return Conflict("This event cannot be edited.");
-        item.Name = request.Name.Trim(); item.Description = request.Description.Trim(); item.EventType = request.EventType.Trim(); item.StartDateTime = request.StartDateTime; item.EndDateTime = request.EndDateTime; item.TimeZoneId = request.TimeZoneId.Trim(); item.VenueName = request.VenueName.Trim(); item.AddressLine1 = request.AddressLine1.Trim(); item.City = request.City.Trim(); item.Province = request.Province.Trim(); item.PostalCode = request.PostalCode?.Trim(); item.RegistrationOpenUtc = request.RegistrationOpenUtc; item.RegistrationCloseUtc = request.RegistrationCloseUtc; item.UpdatedAtUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync(); return NoContent();
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can change event status.");
+        }
+
+        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+
+        if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your event was not found.");
+        }
+
+        if (newStatus.Status != "Draft" && newStatus.Status != "Published" &&
+            newStatus.Status != "Completed" && newStatus.Status != "Cancelled")
+        {
+            return BadRequest("Status must be Draft, Published, Completed or Cancelled.");
+        }
+
+        raceEvent.Status = newStatus.Status;
+        raceEvent.UpdatedAtUtc = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok("Event status changed successfully.");
     }
 
-    [HttpPatch("{eventId:int}/status")]
-    public async Task<IActionResult> SetStatus(int eventId, EventStatusRequest request)
+    [HttpDelete("{eventId}")]
+    public async Task<IActionResult> DeleteEvent(int eventId)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can change event status.");
-        var item = await _db.Events.Include(e => e.Categories).SingleOrDefaultAsync(e => e.EventId == eventId && e.OrganiserId == CurrentUserId); if (item is null) return NotFound();
-        if (request.Status == "Published" && !item.Categories.Any(c => c.IsActive)) return Conflict("A published event needs an active category.");
-        if (request.Status is not ("Draft" or "Published" or "Completed" or "Cancelled")) return BadRequest("Invalid status.");
-        item.Status = request.Status; item.UpdatedAtUtc = DateTime.UtcNow; await _db.SaveChangesAsync(); return NoContent();
-    }
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can delete events.");
+        }
 
-    [HttpDelete("{eventId:int}")]
-    public async Task<IActionResult> Delete(int eventId)
-    {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can delete events.");
-        var item = await Owned(eventId); if (item is null) return NotFound();
-        if (item.Status != "Draft" || await _db.EventEnrollments.AnyAsync(e => e.EventId == eventId)) return Conflict("Only an empty draft can be deleted.");
-        _db.Events.Remove(item); await _db.SaveChangesAsync(); return NoContent();
-    }
+        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
 
-    private Task<RaceEvent?> Owned(int eventId) => _db.Events.SingleOrDefaultAsync(e => e.EventId == eventId && e.OrganiserId == CurrentUserId);
+        if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your event was not found.");
+        }
+
+        if (raceEvent.Status != "Draft")
+        {
+            return BadRequest("Only a draft event can be deleted.");
+        }
+
+        _db.Events.Remove(raceEvent);
+        await _db.SaveChangesAsync();
+
+        return Ok("Event deleted successfully.");
+    }
 }

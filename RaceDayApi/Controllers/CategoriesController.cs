@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
-using RaceDayApi.DTOs;
 using RaceDayApi.Models;
 
 namespace RaceDayApi.Controllers;
@@ -10,47 +9,105 @@ namespace RaceDayApi.Controllers;
 public class CategoriesController : ApiControllerBase
 {
     private readonly RaceDayDbContext _db;
-    public CategoriesController(RaceDayDbContext db) => _db = db;
 
-    [HttpGet("events/{eventId:int}/categories")]
-    public async Task<ActionResult<IEnumerable<Category>>> List(int eventId) => Ok(await _db.Categories.Where(c => c.EventId == eventId && c.IsActive).ToListAsync());
-
-    [HttpGet("categories/{categoryId:int}")]
-    public async Task<ActionResult<Category>> Get(int categoryId)
+    public CategoriesController(RaceDayDbContext db)
     {
-        var category = await _db.Categories.SingleOrDefaultAsync(c => c.CategoryId == categoryId && c.IsActive);
-        return category is null ? NotFound() : Ok(category);
+        _db = db;
     }
 
-    [HttpPost("events/{eventId:int}/categories")]
-    public async Task<ActionResult<Category>> Create(int eventId, CategoryRequest request)
+    [HttpGet("events/{eventId}/categories")]
+    public async Task<IActionResult> GetCategories(int eventId)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can create categories.");
-        if (!await OwnsEvent(eventId)) return NotFound();
-        if (request.MaximumAge.HasValue && request.MinimumAge > request.MaximumAge) return BadRequest("Maximum age must be greater than minimum age.");
-        var category = new Category { EventId = eventId, Name = request.Name.Trim(), Description = request.Description?.Trim(), DistanceKm = request.DistanceKm, EntryFee = request.EntryFee, Capacity = request.Capacity, MinimumAge = request.MinimumAge, MaximumAge = request.MaximumAge, CategoryStartTime = request.CategoryStartTime, IsActive = request.IsActive };
-        _db.Categories.Add(category); await _db.SaveChangesAsync(); return CreatedAtAction(nameof(Get), new { categoryId = category.CategoryId }, category);
+        List<Category> categories = await _db.Categories
+            .Where(c => c.EventId == eventId && c.IsActive)
+            .ToListAsync();
+
+        return Ok(categories);
     }
 
-    [HttpPut("categories/{categoryId:int}")]
-    public async Task<IActionResult> Update(int categoryId, CategoryRequest request)
+    [HttpPost("events/{eventId}/categories")]
+    public async Task<IActionResult> CreateCategory(int eventId, Category category)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can update categories.");
-        var category = await _db.Categories.Include(c => c.Event).SingleOrDefaultAsync(c => c.CategoryId == categoryId && c.Event!.OrganiserId == CurrentUserId); if (category is null) return NotFound();
-        int enrollmentCount = await _db.EventEnrollments.CountAsync(e => e.CategoryId == categoryId && e.Status == "Confirmed");
-        if (request.Capacity < enrollmentCount) return Conflict("Capacity cannot be lower than confirmed enrolments.");
-        category.Name = request.Name.Trim(); category.Description = request.Description?.Trim(); category.DistanceKm = request.DistanceKm; category.EntryFee = request.EntryFee; category.Capacity = request.Capacity; category.MinimumAge = request.MinimumAge; category.MaximumAge = request.MaximumAge; category.CategoryStartTime = request.CategoryStartTime; category.IsActive = request.IsActive;
-        await _db.SaveChangesAsync(); return NoContent();
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can create categories.");
+        }
+
+        RaceEvent? raceEvent = await _db.Events.FindAsync(eventId);
+
+        if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your event was not found.");
+        }
+
+        if (category.MaximumAge.HasValue && category.MinimumAge > category.MaximumAge)
+        {
+            return BadRequest("Maximum age must be greater than minimum age.");
+        }
+
+        category.CategoryId = 0;
+        category.EventId = eventId;
+        _db.Categories.Add(category);
+        await _db.SaveChangesAsync();
+
+        return Ok("Category created successfully.");
     }
 
-    [HttpDelete("categories/{categoryId:int}")]
-    public async Task<IActionResult> Delete(int categoryId)
+    [HttpPut("categories/{categoryId}")]
+    public async Task<IActionResult> UpdateCategory(int categoryId, Category newDetails)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can delete categories.");
-        var category = await _db.Categories.Include(c => c.Event).SingleOrDefaultAsync(c => c.CategoryId == categoryId && c.Event!.OrganiserId == CurrentUserId); if (category is null) return NotFound();
-        if (await _db.EventEnrollments.AnyAsync(e => e.CategoryId == categoryId)) return Conflict("Categories with enrolments cannot be deleted.");
-        _db.Categories.Remove(category); await _db.SaveChangesAsync(); return NoContent();
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can update categories.");
+        }
+
+        Category? category = await _db.Categories.Include(c => c.Event)
+            .FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+
+        if (category == null || category.Event == null || category.Event.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your category was not found.");
+        }
+
+        category.Name = newDetails.Name;
+        category.Description = newDetails.Description;
+        category.DistanceKm = newDetails.DistanceKm;
+        category.EntryFee = newDetails.EntryFee;
+        category.Capacity = newDetails.Capacity;
+        category.MinimumAge = newDetails.MinimumAge;
+        category.MaximumAge = newDetails.MaximumAge;
+        category.CategoryStartTime = newDetails.CategoryStartTime;
+        category.IsActive = newDetails.IsActive;
+
+        await _db.SaveChangesAsync();
+        return Ok("Category updated successfully.");
     }
 
-    private Task<bool> OwnsEvent(int eventId) => _db.Events.AnyAsync(e => e.EventId == eventId && e.OrganiserId == CurrentUserId);
+    [HttpDelete("categories/{categoryId}")]
+    public async Task<IActionResult> DeleteCategory(int categoryId)
+    {
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can delete categories.");
+        }
+
+        Category? category = await _db.Categories.Include(c => c.Event)
+            .FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+
+        if (category == null || category.Event == null || category.Event.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your category was not found.");
+        }
+
+        bool hasEnrolments = await _db.EventEnrollments.AnyAsync(e => e.CategoryId == categoryId);
+        if (hasEnrolments)
+        {
+            return BadRequest("A category with enrolments cannot be deleted.");
+        }
+
+        _db.Categories.Remove(category);
+        await _db.SaveChangesAsync();
+
+        return Ok("Category deleted successfully.");
+    }
 }

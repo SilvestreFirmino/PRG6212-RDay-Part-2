@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
-using RaceDayApi.DTOs;
 using RaceDayApi.Models;
 
 namespace RaceDayApi.Controllers;
@@ -10,61 +9,111 @@ namespace RaceDayApi.Controllers;
 public class ResultsController : ApiControllerBase
 {
     private readonly RaceDayDbContext _db;
-    public ResultsController(RaceDayDbContext db) => _db = db;
 
-    [HttpGet("events/{eventId:int}/results")]
-    public async Task<ActionResult<IEnumerable<RaceResult>>> List(int eventId)
+    public ResultsController(RaceDayDbContext db)
     {
-        var eventItem = await _db.Events.FindAsync(eventId);
-        if (eventItem is null) return NotFound();
-        if (eventItem.Status != "Completed") return Unauthorized("Results are only public after the event is completed.");
-        return Ok(await _db.Results.Include(r => r.Enrollment).Where(r => r.Enrollment!.EventId == eventId).OrderBy(r => r.DurationMilliseconds).ToListAsync());
+        _db = db;
     }
 
-    [HttpGet("results/{resultId:int}")]
-    public async Task<ActionResult<RaceResult>> Get(int resultId)
+    [HttpGet("events/{eventId}/results")]
+    public async Task<IActionResult> GetResults(int eventId)
     {
-        var result = await _db.Results.Include(r => r.Enrollment).ThenInclude(e => e!.Event).SingleOrDefaultAsync(r => r.ResultId == resultId);
-        return result is null || result.Enrollment?.Event?.Status != "Completed" ? NotFound() : Ok(result);
+        List<RaceResult> results = await _db.Results
+            .Include(r => r.Enrollment)
+            .Where(r => r.Enrollment != null && r.Enrollment.EventId == eventId)
+            .OrderBy(r => r.OverallPosition)
+            .ToListAsync();
+
+        return Ok(results);
     }
 
     [HttpGet("results/me")]
-    public async Task<ActionResult<IEnumerable<RaceResult>>> Mine()
+    public async Task<IActionResult> GetMyResults()
     {
-        if (!IsParticipant()) return Unauthorized("Only participants can view their results.");
-        return Ok(await _db.Results.Include(r => r.Enrollment).Where(r => r.Enrollment!.ParticipantId == CurrentUserId).OrderByDescending(r => r.RecordedAtUtc).ToListAsync());
+        if (!IsParticipant())
+        {
+            return Unauthorized("Only participants can view their results.");
+        }
+
+        List<RaceResult> results = await _db.Results
+            .Include(r => r.Enrollment)
+            .Where(r => r.Enrollment != null && r.Enrollment.ParticipantId == CurrentUserId)
+            .ToListAsync();
+
+        return Ok(results);
     }
 
-    [HttpPost("enrollments/{enrollmentId:int}/result")]
-    public async Task<ActionResult<RaceResult>> Create(int enrollmentId, ResultRequest request)
+    [HttpPost("enrollments/{enrollmentId}/result")]
+    public async Task<IActionResult> CreateResult(int enrollmentId, RaceResult result)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can capture results.");
-        var enrollment = await OwnedEnrollment(enrollmentId); if (enrollment is null) return NotFound();
-        if (enrollment.Event!.Status != "Completed") return Conflict("Results can only be captured for completed events.");
-        if (await _db.Results.AnyAsync(r => r.EnrollmentId == enrollmentId)) return Conflict("A result already exists for this enrolment.");
-        if (!ValidResult(request)) return BadRequest("Finished results require duration and positions.");
-        var result = new RaceResult { EnrollmentId = enrollmentId, RecordedByOrganiserId = CurrentUserId, ResultStatus = request.ResultStatus.Trim(), DurationMilliseconds = request.DurationMilliseconds, OverallPosition = request.OverallPosition, CategoryPosition = request.CategoryPosition, Notes = request.Notes?.Trim() };
-        _db.Results.Add(result); await _db.SaveChangesAsync(); return CreatedAtAction(nameof(Get), new { resultId = result.ResultId }, result);
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can capture results.");
+        }
+
+        EventEnrollment? enrollment = await _db.EventEnrollments
+            .Include(e => e.Event)
+            .FirstOrDefaultAsync(e => e.EnrollmentId == enrollmentId);
+
+        if (enrollment == null || enrollment.Event == null || enrollment.Event.OrganiserId != CurrentUserId)
+        {
+            return NotFound("The enrolment was not found.");
+        }
+
+        if (enrollment.Event.Status != "Completed")
+        {
+            return BadRequest("Complete the event before capturing results.");
+        }
+
+        if (await _db.Results.AnyAsync(r => r.EnrollmentId == enrollmentId))
+        {
+            return BadRequest("This enrolment already has a result.");
+        }
+
+        if (result.ResultStatus == "Finished" &&
+            (!result.DurationMilliseconds.HasValue || !result.OverallPosition.HasValue))
+        {
+            return BadRequest("A finished result needs a time and overall position.");
+        }
+
+        result.ResultId = 0;
+        result.EnrollmentId = enrollmentId;
+        result.RecordedByOrganiserId = CurrentUserId;
+        result.RecordedAtUtc = DateTime.UtcNow;
+
+        _db.Results.Add(result);
+        await _db.SaveChangesAsync();
+
+        return Ok("Result captured successfully.");
     }
 
-    [HttpPut("results/{resultId:int}")]
-    public async Task<IActionResult> Update(int resultId, ResultRequest request)
+    [HttpPut("results/{resultId}")]
+    public async Task<IActionResult> UpdateResult(int resultId, RaceResult newDetails)
     {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can update results.");
-        var result = await _db.Results.Include(r => r.Enrollment).ThenInclude(e => e!.Event).SingleOrDefaultAsync(r => r.ResultId == resultId && r.Enrollment!.Event!.OrganiserId == CurrentUserId); if (result is null) return NotFound();
-        if (!ValidResult(request)) return BadRequest("Finished results require duration and positions.");
-        result.ResultStatus = request.ResultStatus.Trim(); result.DurationMilliseconds = request.DurationMilliseconds; result.OverallPosition = request.OverallPosition; result.CategoryPosition = request.CategoryPosition; result.Notes = request.Notes?.Trim(); result.UpdatedAtUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync(); return NoContent();
-    }
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can update results.");
+        }
 
-    [HttpDelete("results/{resultId:int}")]
-    public async Task<IActionResult> Delete(int resultId)
-    {
-        if (!IsOrganiser()) return Unauthorized("Only organisers can delete results.");
-        var result = await _db.Results.Include(r => r.Enrollment).ThenInclude(e => e!.Event).SingleOrDefaultAsync(r => r.ResultId == resultId && r.Enrollment!.Event!.OrganiserId == CurrentUserId); if (result is null) return NotFound();
-        _db.Results.Remove(result); await _db.SaveChangesAsync(); return NoContent();
-    }
+        RaceResult? result = await _db.Results
+            .Include(r => r.Enrollment)
+            .ThenInclude(e => e!.Event)
+            .FirstOrDefaultAsync(r => r.ResultId == resultId);
 
-    private Task<EventEnrollment?> OwnedEnrollment(int enrollmentId) => _db.EventEnrollments.Include(e => e.Event).SingleOrDefaultAsync(e => e.EnrollmentId == enrollmentId && e.Event!.OrganiserId == CurrentUserId);
-    private static bool ValidResult(ResultRequest request) => request.ResultStatus != "Finished" || (request.DurationMilliseconds.HasValue && request.OverallPosition.HasValue && request.CategoryPosition.HasValue);
+        if (result == null || result.Enrollment == null || result.Enrollment.Event == null ||
+            result.Enrollment.Event.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your result was not found.");
+        }
+
+        result.ResultStatus = newDetails.ResultStatus;
+        result.DurationMilliseconds = newDetails.DurationMilliseconds;
+        result.OverallPosition = newDetails.OverallPosition;
+        result.CategoryPosition = newDetails.CategoryPosition;
+        result.Notes = newDetails.Notes;
+        result.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return Ok("Result updated successfully.");
+    }
 }
