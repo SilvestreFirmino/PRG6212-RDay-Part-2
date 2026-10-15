@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
@@ -57,8 +58,38 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPost]
-    public IActionResult CreateEvent(RaceEvent raceEvent)
+    public IActionResult CreateEvent(
+        [FromForm, Required, MaxLength(160)] string name,
+        [FromForm, Required, MaxLength(2000)] string description,
+        [FromForm, Required, MaxLength(20)] string eventType,
+        [FromForm] DateTime startDateTime,
+        [FromForm] DateTime endDateTime,
+        [FromForm, Required, MaxLength(160)] string venueName,
+        [FromForm, Required, MaxLength(160)] string addressLine1,
+        [FromForm, Required, MaxLength(100)] string city,
+        [FromForm, Required, MaxLength(100)] string province,
+        [FromForm] DateTime registrationOpenUtc,
+        [FromForm] DateTime registrationCloseUtc,
+        [FromForm, Required, MaxLength(64)] string timeZoneId = "South Africa Standard Time",
+        [FromForm, MaxLength(10)] string? postalCode = null)
     {
+        RaceEvent raceEvent = new RaceEvent
+        {
+            Name = name,
+            Description = description,
+            EventType = eventType,
+            StartDateTime = startDateTime,
+            EndDateTime = endDateTime,
+            TimeZoneId = timeZoneId,
+            VenueName = venueName,
+            AddressLine1 = addressLine1,
+            City = city,
+            Province = province,
+            PostalCode = postalCode,
+            RegistrationOpenUtc = registrationOpenUtc,
+            RegistrationCloseUtc = registrationCloseUtc
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can create events.");
@@ -82,8 +113,39 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPut("{eventId}")]
-    public IActionResult UpdateEvent(int eventId, RaceEvent newDetails)
+    public IActionResult UpdateEvent(
+        int eventId,
+        [FromForm, Required, MaxLength(160)] string name,
+        [FromForm, Required, MaxLength(2000)] string description,
+        [FromForm, Required, MaxLength(20)] string eventType,
+        [FromForm] DateTime startDateTime,
+        [FromForm] DateTime endDateTime,
+        [FromForm, Required, MaxLength(160)] string venueName,
+        [FromForm, Required, MaxLength(160)] string addressLine1,
+        [FromForm, Required, MaxLength(100)] string city,
+        [FromForm, Required, MaxLength(100)] string province,
+        [FromForm] DateTime registrationOpenUtc,
+        [FromForm] DateTime registrationCloseUtc,
+        [FromForm, Required, MaxLength(64)] string timeZoneId = "South Africa Standard Time",
+        [FromForm, MaxLength(10)] string? postalCode = null)
     {
+        RaceEvent newDetails = new RaceEvent
+        {
+            Name = name,
+            Description = description,
+            EventType = eventType,
+            StartDateTime = startDateTime,
+            EndDateTime = endDateTime,
+            TimeZoneId = timeZoneId,
+            VenueName = venueName,
+            AddressLine1 = addressLine1,
+            City = city,
+            Province = province,
+            PostalCode = postalCode,
+            RegistrationOpenUtc = registrationOpenUtc,
+            RegistrationCloseUtc = registrationCloseUtc
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update events.");
@@ -126,7 +188,9 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPut("{eventId}/status")]
-    public IActionResult ChangeStatus(int eventId, StatusChange newStatus)
+    public IActionResult ChangeStatus(
+        int eventId,
+        [FromForm, Required] string status)
     {
         if (!IsOrganiser())
         {
@@ -140,13 +204,13 @@ public class EventsController : ApiControllerBase
             return NotFound("Your event was not found.");
         }
 
-        if (newStatus.Status != "Draft" && newStatus.Status != "Published" &&
-            newStatus.Status != "Completed" && newStatus.Status != "Cancelled")
+        if (status != "Draft" && status != "Published" &&
+            status != "Completed" && status != "Cancelled")
         {
             return BadRequest("Status must be Draft, Published, Completed or Cancelled.");
         }
 
-        raceEvent.Status = newStatus.Status;
+        raceEvent.Status = status;
         raceEvent.UpdatedAtUtc = DateTime.UtcNow;
         _db.SaveChanges();
 

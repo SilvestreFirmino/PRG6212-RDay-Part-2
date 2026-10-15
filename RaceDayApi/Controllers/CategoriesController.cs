@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
@@ -26,8 +27,31 @@ public class CategoriesController : ApiControllerBase
     }
 
     [HttpPost("events/{eventId}/categories")]
-    public IActionResult CreateCategory(int eventId, Category category)
+    public IActionResult CreateCategory(
+        int eventId,
+        [FromForm, Required, MaxLength(100)] string name,
+        [FromForm] decimal distanceKm,
+        [FromForm] decimal entryFee,
+        [FromForm] int capacity,
+        [FromForm, MaxLength(500)] string? description = null,
+        [FromForm] int? minimumAge = null,
+        [FromForm] int? maximumAge = null,
+        [FromForm] TimeSpan? categoryStartTime = null,
+        [FromForm] bool isActive = true)
     {
+        Category category = new Category
+        {
+            Name = name,
+            Description = description,
+            DistanceKm = distanceKm,
+            EntryFee = entryFee,
+            Capacity = capacity,
+            MinimumAge = minimumAge,
+            MaximumAge = maximumAge,
+            CategoryStartTime = categoryStartTime,
+            IsActive = isActive
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can create categories.");
@@ -54,8 +78,31 @@ public class CategoriesController : ApiControllerBase
     }
 
     [HttpPut("categories/{categoryId}")]
-    public IActionResult UpdateCategory(int categoryId, Category newDetails)
+    public IActionResult UpdateCategory(
+        int categoryId,
+        [FromForm, Required, MaxLength(100)] string name,
+        [FromForm] decimal distanceKm,
+        [FromForm] decimal entryFee,
+        [FromForm] int capacity,
+        [FromForm, MaxLength(500)] string? description = null,
+        [FromForm] int? minimumAge = null,
+        [FromForm] int? maximumAge = null,
+        [FromForm] TimeSpan? categoryStartTime = null,
+        [FromForm] bool isActive = true)
     {
+        Category newDetails = new Category
+        {
+            Name = name,
+            Description = description,
+            DistanceKm = distanceKm,
+            EntryFee = entryFee,
+            Capacity = capacity,
+            MinimumAge = minimumAge,
+            MaximumAge = maximumAge,
+            CategoryStartTime = categoryStartTime,
+            IsActive = isActive
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update categories.");

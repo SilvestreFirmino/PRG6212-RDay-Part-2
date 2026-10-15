@@ -48,10 +48,12 @@ The Part 2 ASP.NET Core Web API is in [`RaceDayApi`](RaceDayApi). It uses Entity
 
 1. Open `RaceDay.sln` in Visual Studio 2022.
 2. Set `RaceDayApi` as the startup project.
-3. In `RaceDayApi/appsettings.json`, confirm the `RaceDayDatabase` connection string points to your LocalDB or SQL Server instance. Replace the development JWT key before deploying publicly.
-4. Open a terminal in the repository and run `dotnet tool restore`, then `dotnet ef database update --project RaceDayApi --startup-project RaceDayApi`.
-5. Run the API. Swagger opens at `/swagger`. Register an account, use the login endpoint, then test the role-protected routes in the same browser session.
+3. In `RaceDayApi/appsettings.json`, confirm the `RaceDayDatabase` connection string points to your LocalDB or SQL Server instance. Authentication uses sessions.
+4. If you already created the full database with the SQL script, keep it. Do not also run the initial migration against it. For a separate new database, use the EF Core migrations to create the schema.
+5. Run the API. Swagger opens at `/swagger`. Click **Try it out** to enter individual form fields. Register using the Participant/Organiser dropdown, log in using the email/password fields, then test the role-protected routes in the same browser session.
 6. Run the test suite with `dotnet test RaceDay.sln`.
+
+The controllers use individual `[FromForm]` inputs, with no separate request/form classes or `[Consumes]` attributes. See the [simple code and video guide](docs/simple-code-and-video-guide.md) for explanations and replacement instructions. If you manually added `InputForms.cs` or `RegistrationDetails.cs` from an older ZIP, remove those old files when updating; this version uses `RegistrationRole.cs` for the dropdown. Do not paste new controller code below the old code.
 
 ## CI/CD validation
 

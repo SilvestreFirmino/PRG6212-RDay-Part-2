@@ -16,8 +16,17 @@ public class EnrollmentsController : ApiControllerBase
     }
 
     [HttpPost("events/{eventId}/enrollments")]
-    public IActionResult Enrol(int eventId, EventEnrollment enrollment)
+    public IActionResult Enrol(
+        int eventId,
+        [FromForm] int categoryId,
+        [FromForm] bool emergencyConsent)
     {
+        EventEnrollment enrollment = new EventEnrollment
+        {
+            CategoryId = categoryId,
+            EmergencyConsent = emergencyConsent
+        };
+
         if (!IsParticipant())
         {
             return Unauthorized("Only participants can enter an event.");
