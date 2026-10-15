@@ -1,5 +1,5 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
 using RaceDayApi.Models;
 using RaceDayApi.Services;
@@ -19,23 +19,27 @@ public class AuthController : ApiControllerBase
     }
 
     [HttpPost("register")]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult Register([FromForm] RegistrationDetails details)
+    public IActionResult Register(
+        [FromForm, Required, MaxLength(80)] string firstName,
+        [FromForm, Required, MaxLength(80)] string lastName,
+        [FromForm, Required, EmailAddress, MaxLength(254)] string email,
+        [FromForm, Required, MinLength(8), DataType(DataType.Password)] string password,
+        [FromForm, Required, EnumDataType(typeof(RegistrationRole))] RegistrationRole? role = null,
+        [FromForm, DataType(DataType.Date)] DateTime? dateOfBirth = null,
+        [FromForm, MaxLength(20)] string? gender = null,
+        [FromForm, MaxLength(160)] string? emergencyContactName = null,
+        [FromForm, MaxLength(20)] string? emergencyContactPhone = null)
     {
-        if (details.Role == null || !Enum.IsDefined(typeof(RegistrationRole), details.Role.Value))
-            return BadRequest("Please choose Participant or Organiser.");
-        if (string.IsNullOrWhiteSpace(details.FirstName) || string.IsNullOrWhiteSpace(details.LastName)
-            || string.IsNullOrWhiteSpace(details.Email))
-            return BadRequest("Please enter your first name, last name and email.");
-        string role = details.Role.Value.ToString();
-        string email = details.Email;
-        string password = details.Password;
-
-        // Check the two roles that are allowed in RaceDay.
-        if (role != Roles.Organiser && role != Roles.Participant)
+        if (role == null || !Enum.IsDefined(typeof(RegistrationRole), role.Value))
         {
-            return BadRequest("Please choose Organiser or Participant as the role.");
+            return BadRequest("Please choose Participant or Organiser.");
         }
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName)
+            || string.IsNullOrWhiteSpace(email))
+        {
+            return BadRequest("Please enter your first name, last name and email.");
+        }
+        string roleName = role.Value.ToString();
 
         if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
         {
@@ -52,10 +56,10 @@ public class AuthController : ApiControllerBase
         // Create a new User instance
         User user = new User
         {
-            FirstName = details.FirstName.Trim(),
-            LastName = details.LastName.Trim(),
+            FirstName = firstName.Trim(),
+            LastName = lastName.Trim(),
             Email = email,
-            Role = role,
+            Role = roleName,
             PasswordHash = _passwords.Hash(password),
             Password = string.Empty,
             UserId = 0,
@@ -64,32 +68,23 @@ public class AuthController : ApiControllerBase
         };
 
         // Participants enter their own profile details in the registration form.
-        if (role == Roles.Participant)
+        if (roleName == Roles.Participant)
         {
-            if (details.DateOfBirth == null || details.DateOfBirth.Value.Date >= DateTime.UtcNow.Date
-                || string.IsNullOrWhiteSpace(details.Gender)
-                || string.IsNullOrWhiteSpace(details.EmergencyContactName)
-                || string.IsNullOrWhiteSpace(details.EmergencyContactPhone))
+            if (dateOfBirth == null || dateOfBirth.Value.Date >= DateTime.UtcNow.Date
+                || string.IsNullOrWhiteSpace(gender)
+                || string.IsNullOrWhiteSpace(emergencyContactName)
+                || string.IsNullOrWhiteSpace(emergencyContactPhone))
+            {
                 return BadRequest("Participants must enter a past date of birth, gender, emergency contact name and phone.");
+            }
 
             user.ParticipantProfile = new ParticipantProfile
             {
-                DateOfBirth = details.DateOfBirth.Value,
-                Gender = details.Gender,
-                EmergencyContactName = details.EmergencyContactName,
-                EmergencyContactPhone = details.EmergencyContactPhone
+                DateOfBirth = dateOfBirth.Value,
+                Gender = gender,
+                EmergencyContactName = emergencyContactName,
+                EmergencyContactPhone = emergencyContactPhone
             };
-        }
-
-        // Validate participant profile requirement
-        if (role == Roles.Participant && user.ParticipantProfile == null)
-        {
-            return BadRequest("A participant must add their profile details.");
-        }
-
-        if (string.IsNullOrWhiteSpace(user.PasswordHash))
-        {
-            return BadRequest("Password hashing failed.");
         }
 
         _db.Users.Add(user);
@@ -99,13 +94,14 @@ public class AuthController : ApiControllerBase
     }
 
     [HttpPost("login")]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult Login([FromForm] LoginDetails login)
+    public IActionResult Login(
+        [FromForm, Required, EmailAddress] string email,
+        [FromForm, Required, DataType(DataType.Password)] string password)
     {
-        if (string.IsNullOrWhiteSpace(login.Email) || string.IsNullOrWhiteSpace(login.Password))
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
             return BadRequest("Please enter your email and password.");
-        string email = login.Email;
-        string password = login.Password;
+        }
         email = email.Trim().ToLower();
         User? user = _db.Users.FirstOrDefault(u => u.Email == email);
 

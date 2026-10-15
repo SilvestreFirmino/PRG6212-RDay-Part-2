@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
@@ -10,20 +11,19 @@ public class EnrollmentsController : ApiControllerBase
 {
     private readonly RaceDayDbContext _db;
 
-    public EnrollmentsController(RaceDayDbContext db)
+    public ResultsController(RaceDayDbContext db)
     {
         _db = db;
     }
 
-    [HttpPost("events/{eventId}/enrollments")]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult Enrol(int eventId, [FromForm] EnrollmentForm form)
+    [HttpGet("events/{eventId}/results")]
+    public IActionResult GetResults(int eventId)
     {
-        EventEnrollment enrollment = new EventEnrollment
-        {
-            CategoryId = form.CategoryId,
-            EmergencyConsent = form.EmergencyConsent
-        };
+        List<RaceResult> results = _db.Results
+            .Include(r => r.Enrollment)
+            .Where(r => r.Enrollment != null && r.Enrollment.EventId == eventId)
+            .OrderBy(r => r.OverallPosition)
+            .ToList();
 
         if (!IsParticipant())
         {
@@ -38,90 +38,110 @@ public class EnrollmentsController : ApiControllerBase
         RaceEvent? raceEvent = _db.Events.Find(eventId);
         Category? category = _db.Categories.Find(enrollment.CategoryId);
 
-        if (raceEvent == null || category == null || category.EventId != eventId)
-        {
-            return NotFound("The event or category was not found.");
-        }
-
-        if (raceEvent.Status != "Published")
-        {
-            return BadRequest("This event is not open for entries.");
-        }
-
-        if (DateTime.UtcNow < raceEvent.RegistrationOpenUtc || DateTime.UtcNow > raceEvent.RegistrationCloseUtc)
-        {
-            return BadRequest("Registration is currently closed.");
-        }
-
-        bool alreadyEntered = _db.EventEnrollments.Any(e =>
-            e.EventId == eventId && e.ParticipantId == CurrentUserId);
-
-        if (alreadyEntered)
-        {
-            return BadRequest("You are already entered for this event.");
-        }
-
-        int numberOfEntries = _db.EventEnrollments.Count(e =>
-            e.CategoryId == category.CategoryId && e.Status != "Withdrawn");
-
-        if (numberOfEntries >= category.Capacity)
-        {
-            return BadRequest("This category is full.");
-        }
-
-        // IDs and payment amount are set by the API, not trusted from the request body.
-        enrollment.EnrollmentId = 0;
-        enrollment.EventId = eventId;
-        enrollment.ParticipantId = CurrentUserId;
-        enrollment.FeePaid = category.EntryFee;
-        enrollment.Status = "Pending";
-        enrollment.PaymentStatus = "Unpaid";
-        enrollment.EnrolledAtUtc = DateTime.UtcNow;
-
-        _db.EventEnrollments.Add(enrollment);
-        _db.SaveChanges();
-
-        return Ok("Event entry recorded successfully.");
+        return Ok(results);
     }
 
-    [HttpGet("enrollments/me")]
-    public IActionResult GetMyEnrolments()
+    [HttpPost("enrollments/{enrollmentId}/result")]
+    public IActionResult CreateResult(
+        int enrollmentId,
+        [FromForm, Required, MaxLength(10)] string resultStatus,
+        [FromForm] long? durationMilliseconds = null,
+        [FromForm] int? overallPosition = null,
+        [FromForm] int? categoryPosition = null,
+        [FromForm, MaxLength(500)] string? notes = null)
     {
-        if (!IsParticipant())
+        RaceResult result = new RaceResult
         {
-            return Unauthorized("Only participants can view their enrolments.");
-        }
+            ResultStatus = resultStatus,
+            DurationMilliseconds = durationMilliseconds,
+            OverallPosition = overallPosition,
+            CategoryPosition = categoryPosition,
+            Notes = notes
+        };
 
-        List<EventEnrollment> enrolments = _db.EventEnrollments
-            .Include(e => e.Event)
-            .Include(e => e.Category)
-            .Where(e => e.ParticipantId == CurrentUserId)
-            .ToList();
-
-        return Ok(enrolments);
-    }
-
-    [HttpGet("events/{eventId}/enrollments")]
-    public IActionResult GetEventEnrolments(int eventId)
-    {
         if (!IsOrganiser())
         {
-            return Unauthorized("Only organisers can view event enrolments.");
+            return Unauthorized("Only organisers can capture results.");
         }
 
-        RaceEvent? raceEvent = _db.Events.Find(eventId);
+        EventEnrollment? enrollment = _db.EventEnrollments
+            .Include(e => e.Event)
+            .FirstOrDefault(e => e.EnrollmentId == enrollmentId);
 
-        if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
+        if (enrollment == null || enrollment.Event == null || enrollment.Event.OrganiserId != CurrentUserId)
         {
-            return NotFound("Your event was not found.");
+            return NotFound("The enrolment was not found.");
         }
 
-        List<EventEnrollment> enrolments = _db.EventEnrollments
-            .Include(e => e.Participant)
-            .Include(e => e.Category)
-            .Where(e => e.EventId == eventId)
-            .ToList();
+        if (enrollment.Event.Status != "Completed")
+        {
+            return BadRequest("Complete the event before capturing results.");
+        }
 
-        return Ok(enrolments);
+        if (_db.Results.Any(r => r.EnrollmentId == enrollmentId))
+        {
+            return BadRequest("This enrolment already has a result.");
+        }
+
+        if (result.ResultStatus == "Finished" &&
+            (!result.DurationMilliseconds.HasValue || !result.OverallPosition.HasValue))
+        {
+            return BadRequest("A finished result needs a time and overall position.");
+        }
+
+        result.ResultId = 0;
+        result.EnrollmentId = enrollmentId;
+        result.RecordedByOrganiserId = CurrentUserId;
+        result.RecordedAtUtc = DateTime.UtcNow;
+
+        _db.Results.Add(result);
+        _db.SaveChanges();
+
+        return Ok("Result captured successfully.");
+    }
+
+    [HttpPut("results/{resultId}")]
+    public IActionResult UpdateResult(
+        int resultId,
+        [FromForm, Required, MaxLength(10)] string resultStatus,
+        [FromForm] long? durationMilliseconds = null,
+        [FromForm] int? overallPosition = null,
+        [FromForm] int? categoryPosition = null,
+        [FromForm, MaxLength(500)] string? notes = null)
+    {
+        RaceResult newDetails = new RaceResult
+        {
+            ResultStatus = resultStatus,
+            DurationMilliseconds = durationMilliseconds,
+            OverallPosition = overallPosition,
+            CategoryPosition = categoryPosition,
+            Notes = notes
+        };
+
+        if (!IsOrganiser())
+        {
+            return Unauthorized("Only organisers can update results.");
+        }
+
+        RaceResult? result = _db.Results
+            .Include(r => r.Enrollment)
+            .ThenInclude(e => e!.Event)
+            .FirstOrDefault(r => r.ResultId == resultId);
+
+        if (result == null || result.Enrollment == null || result.Enrollment.Event == null ||
+            result.Enrollment.Event.OrganiserId != CurrentUserId)
+        {
+            return NotFound("Your result was not found.");
+        }
+
+        result.ResultStatus = newDetails.ResultStatus;
+        result.DurationMilliseconds = newDetails.DurationMilliseconds;
+        result.OverallPosition = newDetails.OverallPosition;
+        result.CategoryPosition = newDetails.CategoryPosition;
+        result.Notes = newDetails.Notes;
+        result.UpdatedAtUtc = DateTime.UtcNow;
+
+        _db.SaveChanges();
+        return Ok("Result updated successfully.");
     }
 }
