@@ -7,7 +7,7 @@ using RaceDayApi.Models;
 namespace RaceDayApi.Controllers;
 
 [Route("api")]
-public class EnrollmentsController : ApiControllerBase
+public class ResultsController : ApiControllerBase
 {
     private readonly RaceDayDbContext _db;
 
@@ -25,18 +25,21 @@ public class EnrollmentsController : ApiControllerBase
             .OrderBy(r => r.OverallPosition)
             .ToList();
 
+        return Ok(results);
+    }
+
+    [HttpGet("results/me")]
+    public IActionResult GetMyResults()
+    {
         if (!IsParticipant())
         {
-            return Unauthorized("Only participants can enter an event.");
+            return Unauthorized("Only participants can view their results.");
         }
 
-        if (!enrollment.EmergencyConsent)
-        {
-            return BadRequest("Emergency consent is required.");
-        }
-
-        RaceEvent? raceEvent = _db.Events.Find(eventId);
-        Category? category = _db.Categories.Find(enrollment.CategoryId);
+        List<RaceResult> results = _db.Results
+            .Include(r => r.Enrollment)
+            .Where(r => r.Enrollment != null && r.Enrollment.ParticipantId == CurrentUserId)
+            .ToList();
 
         return Ok(results);
     }
