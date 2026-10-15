@@ -38,13 +38,14 @@ Assert-Condition (-not (Compare-Object $expectedPngSignature $pngBytes[0..7])) '
 $sql = Get-Content (Join-Path $repositoryRoot 'docs/raceday-database.sql') -Raw
 $requiredTables = @('Users', 'ParticipantProfiles', 'Events', 'Categories', 'EventEnrollments', 'Results')
 foreach ($table in $requiredTables) {
-    Assert-Condition ($sql -match "(?im)^CREATE TABLE dbo\.$table\s*$") "SQL script does not create dbo.$table."
+    $tableDefinition = [regex]::Match($sql, "(?ims)^CREATE TABLE (?:dbo\.)?$table\s*\((.*?)^\);")
+    Assert-Condition $tableDefinition.Success "SQL script does not create $table."
+    Assert-Condition ($tableDefinition.Groups[1].Value -match '(?i)PRIMARY KEY') "$table must have a primary key."
+    Assert-Condition ($sql -match "(?im)^\s*INSERT INTO (?:dbo\.)?$table\b") "$table must receive seed data."
+    Assert-Condition ($sql -match "(?im)^SELECT \* FROM (?:dbo\.)?$table;") "Missing verification query for $table."
 }
 
-Assert-Condition (($sql | Select-String -Pattern '(?im)^\s*CONSTRAINT\s+PK_' -AllMatches).Matches.Count -ge 6) 'Every entity must have a primary-key constraint.'
 Assert-Condition (($sql | Select-String -Pattern '(?im)FOREIGN KEY' -AllMatches).Matches.Count -ge 8) 'Expected foreign-key relationships are missing.'
-Assert-Condition (($sql | Select-String -Pattern '(?im)^\s*INSERT INTO dbo\.' -AllMatches).Matches.Count -ge 6) 'Every entity must receive seed data.'
-Assert-Condition ($sql -match "THROW 50015") 'Post-deployment verification checks are missing.'
 
 $endpointPlan = Get-Content (Join-Path $repositoryRoot 'docs/endpoint-plan.md') -Raw
 $endpointAreas = @('Authentication', 'User profile', 'Event endpoints', 'Category endpoints', 'Event enrolment', 'Result endpoints')

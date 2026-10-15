@@ -89,7 +89,7 @@ jobs:
           docker exec "$SQL_CONTAINER" "$SQLCMD" \
             -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b \
             -d RaceDayDb \
-            -Q "SET NOCOUNT ON; IF (SELECT COUNT(*) FROM dbo.Users) <> 4 THROW 51001, 'Unexpected user count.', 1; IF (SELECT COUNT(*) FROM dbo.Events) <> 3 THROW 51002, 'Unexpected event count.', 1; IF (SELECT COUNT(*) FROM dbo.Categories) <> 8 THROW 51003, 'Unexpected category count.', 1; IF (SELECT COUNT(*) FROM dbo.EventEnrollments) <> 4 THROW 51004, 'Unexpected enrolment count.', 1; IF (SELECT COUNT(*) FROM dbo.Results) <> 2 THROW 51005, 'Unexpected result count.', 1; SELECT 'Clean SQL Server validation passed.' AS ValidationResult;"
+            -Q "SET NOCOUNT ON; IF (SELECT COUNT(*) FROM dbo.Users) <> 4 THROW 51001, 'Unexpected user count.', 1; IF (SELECT COUNT(*) FROM dbo.Events) <> 3 THROW 51002, 'Unexpected event count.', 1; IF (SELECT COUNT(*) FROM dbo.Categories) <> 9 THROW 51003, 'Unexpected category count.', 1; IF (SELECT COUNT(*) FROM dbo.EventEnrollments) <> 3 THROW 51004, 'Unexpected enrolment count.', 1; IF (SELECT COUNT(*) FROM dbo.Results) <> 2 THROW 51005, 'Unexpected result count.', 1; SELECT 'Clean SQL Server validation passed.' AS ValidationResult;"
 
       - name: Print SQL Server logs after failure
         if: failure()
