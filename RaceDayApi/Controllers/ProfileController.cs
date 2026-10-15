@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
@@ -35,8 +36,16 @@ public class ProfileController : ApiControllerBase
     }
 
     [HttpPut]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult UpdateProfile([FromForm] ProfileForm newDetails)
+    public IActionResult UpdateProfile(
+        [FromForm, Required, MaxLength(80)] string firstName,
+        [FromForm, Required, MaxLength(80)] string lastName,
+        [FromForm, MaxLength(20)] string? phoneNumber = null,
+        [FromForm, DataType(DataType.Date)] DateTime? dateOfBirth = null,
+        [FromForm, MaxLength(20)] string? gender = null,
+        [FromForm, MaxLength(160)] string? emergencyContactName = null,
+        [FromForm, MaxLength(20)] string? emergencyContactPhone = null,
+        [FromForm, MaxLength(500)] string? medicalNotes = null,
+        [FromForm, MaxLength(120)] string? clubName = null)
     {
         if (!LoggedIn())
         {
@@ -52,27 +61,27 @@ public class ProfileController : ApiControllerBase
         }
 
         // Only update the details belonging to the logged-in user.
-        user.FirstName = newDetails.FirstName;
-        user.LastName = newDetails.LastName;
-        user.PhoneNumber = newDetails.PhoneNumber;
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.PhoneNumber = phoneNumber;
         user.UpdatedAtUtc = DateTime.UtcNow;
 
         if (user.Role == Roles.Participant && user.ParticipantProfile != null)
         {
-            if (newDetails.DateOfBirth.HasValue)
+            if (dateOfBirth.HasValue)
             {
-                if (newDetails.DateOfBirth.Value.Date >= DateTime.UtcNow.Date)
+                if (dateOfBirth.Value.Date >= DateTime.UtcNow.Date)
                     return BadRequest("Date of birth must be in the past.");
-                user.ParticipantProfile.DateOfBirth = newDetails.DateOfBirth.Value;
+                user.ParticipantProfile.DateOfBirth = dateOfBirth.Value;
             }
-            if (!string.IsNullOrWhiteSpace(newDetails.Gender))
-                user.ParticipantProfile.Gender = newDetails.Gender;
-            if (!string.IsNullOrWhiteSpace(newDetails.EmergencyContactName))
-                user.ParticipantProfile.EmergencyContactName = newDetails.EmergencyContactName;
-            if (!string.IsNullOrWhiteSpace(newDetails.EmergencyContactPhone))
-                user.ParticipantProfile.EmergencyContactPhone = newDetails.EmergencyContactPhone;
-            user.ParticipantProfile.MedicalNotes = newDetails.MedicalNotes;
-            user.ParticipantProfile.ClubName = newDetails.ClubName;
+            if (!string.IsNullOrWhiteSpace(gender))
+                user.ParticipantProfile.Gender = gender;
+            if (!string.IsNullOrWhiteSpace(emergencyContactName))
+                user.ParticipantProfile.EmergencyContactName = emergencyContactName;
+            if (!string.IsNullOrWhiteSpace(emergencyContactPhone))
+                user.ParticipantProfile.EmergencyContactPhone = emergencyContactPhone;
+            user.ParticipantProfile.MedicalNotes = medicalNotes;
+            user.ParticipantProfile.ClubName = clubName;
         }
 
         _db.SaveChanges();

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
@@ -57,24 +58,36 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPost]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult CreateEvent([FromForm] EventForm form)
+    public IActionResult CreateEvent(
+        [FromForm, Required, MaxLength(160)] string name,
+        [FromForm, Required, MaxLength(2000)] string description,
+        [FromForm, Required, MaxLength(20)] string eventType,
+        [FromForm] DateTime startDateTime,
+        [FromForm] DateTime endDateTime,
+        [FromForm, Required, MaxLength(160)] string venueName,
+        [FromForm, Required, MaxLength(160)] string addressLine1,
+        [FromForm, Required, MaxLength(100)] string city,
+        [FromForm, Required, MaxLength(100)] string province,
+        [FromForm] DateTime registrationOpenUtc,
+        [FromForm] DateTime registrationCloseUtc,
+        [FromForm, Required, MaxLength(64)] string timeZoneId = "South Africa Standard Time",
+        [FromForm, MaxLength(10)] string? postalCode = null)
     {
         RaceEvent raceEvent = new RaceEvent
         {
-            Name = form.Name,
-            Description = form.Description,
-            EventType = form.EventType,
-            StartDateTime = form.StartDateTime,
-            EndDateTime = form.EndDateTime,
-            TimeZoneId = form.TimeZoneId,
-            VenueName = form.VenueName,
-            AddressLine1 = form.AddressLine1,
-            City = form.City,
-            Province = form.Province,
-            PostalCode = form.PostalCode,
-            RegistrationOpenUtc = form.RegistrationOpenUtc,
-            RegistrationCloseUtc = form.RegistrationCloseUtc
+            Name = name,
+            Description = description,
+            EventType = eventType,
+            StartDateTime = startDateTime,
+            EndDateTime = endDateTime,
+            TimeZoneId = timeZoneId,
+            VenueName = venueName,
+            AddressLine1 = addressLine1,
+            City = city,
+            Province = province,
+            PostalCode = postalCode,
+            RegistrationOpenUtc = registrationOpenUtc,
+            RegistrationCloseUtc = registrationCloseUtc
         };
 
         if (!IsOrganiser())
@@ -100,24 +113,37 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPut("{eventId}")]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult UpdateEvent(int eventId, [FromForm] EventForm form)
+    public IActionResult UpdateEvent(
+        int eventId,
+        [FromForm, Required, MaxLength(160)] string name,
+        [FromForm, Required, MaxLength(2000)] string description,
+        [FromForm, Required, MaxLength(20)] string eventType,
+        [FromForm] DateTime startDateTime,
+        [FromForm] DateTime endDateTime,
+        [FromForm, Required, MaxLength(160)] string venueName,
+        [FromForm, Required, MaxLength(160)] string addressLine1,
+        [FromForm, Required, MaxLength(100)] string city,
+        [FromForm, Required, MaxLength(100)] string province,
+        [FromForm] DateTime registrationOpenUtc,
+        [FromForm] DateTime registrationCloseUtc,
+        [FromForm, Required, MaxLength(64)] string timeZoneId = "South Africa Standard Time",
+        [FromForm, MaxLength(10)] string? postalCode = null)
     {
         RaceEvent newDetails = new RaceEvent
         {
-            Name = form.Name,
-            Description = form.Description,
-            EventType = form.EventType,
-            StartDateTime = form.StartDateTime,
-            EndDateTime = form.EndDateTime,
-            TimeZoneId = form.TimeZoneId,
-            VenueName = form.VenueName,
-            AddressLine1 = form.AddressLine1,
-            City = form.City,
-            Province = form.Province,
-            PostalCode = form.PostalCode,
-            RegistrationOpenUtc = form.RegistrationOpenUtc,
-            RegistrationCloseUtc = form.RegistrationCloseUtc
+            Name = name,
+            Description = description,
+            EventType = eventType,
+            StartDateTime = startDateTime,
+            EndDateTime = endDateTime,
+            TimeZoneId = timeZoneId,
+            VenueName = venueName,
+            AddressLine1 = addressLine1,
+            City = city,
+            Province = province,
+            PostalCode = postalCode,
+            RegistrationOpenUtc = registrationOpenUtc,
+            RegistrationCloseUtc = registrationCloseUtc
         };
 
         if (!IsOrganiser())
@@ -162,8 +188,9 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPut("{eventId}/status")]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult ChangeStatus(int eventId, [FromForm] StatusChange newStatus)
+    public IActionResult ChangeStatus(
+        int eventId,
+        [FromForm, Required] string status)
     {
         if (!IsOrganiser())
         {
@@ -177,13 +204,13 @@ public class EventsController : ApiControllerBase
             return NotFound("Your event was not found.");
         }
 
-        if (newStatus.Status != "Draft" && newStatus.Status != "Published" &&
-            newStatus.Status != "Completed" && newStatus.Status != "Cancelled")
+        if (status != "Draft" && status != "Published" &&
+            status != "Completed" && status != "Cancelled")
         {
             return BadRequest("Status must be Draft, Published, Completed or Cancelled.");
         }
 
-        raceEvent.Status = newStatus.Status;
+        raceEvent.Status = status;
         raceEvent.UpdatedAtUtc = DateTime.UtcNow;
         _db.SaveChanges();
 

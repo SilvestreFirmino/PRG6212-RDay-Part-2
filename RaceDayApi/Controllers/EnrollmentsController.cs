@@ -16,13 +16,15 @@ public class EnrollmentsController : ApiControllerBase
     }
 
     [HttpPost("events/{eventId}/enrollments")]
-    [Consumes("application/x-www-form-urlencoded")]
-    public IActionResult Enrol(int eventId, [FromForm] EnrollmentForm form)
+    public IActionResult Enrol(
+        int eventId,
+        [FromForm] int categoryId,
+        [FromForm] bool emergencyConsent)
     {
         EventEnrollment enrollment = new EventEnrollment
         {
-            CategoryId = form.CategoryId,
-            EmergencyConsent = form.EmergencyConsent
+            CategoryId = categoryId,
+            EmergencyConsent = emergencyConsent
         };
 
         if (!IsParticipant())
