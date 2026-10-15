@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayApi.Data;
@@ -44,8 +45,23 @@ public class ResultsController : ApiControllerBase
     }
 
     [HttpPost("enrollments/{enrollmentId}/result")]
-    public IActionResult CreateResult(int enrollmentId, RaceResult result)
+    public IActionResult CreateResult(
+        int enrollmentId,
+        [FromForm, Required, MaxLength(10)] string resultStatus,
+        [FromForm] long? durationMilliseconds = null,
+        [FromForm] int? overallPosition = null,
+        [FromForm] int? categoryPosition = null,
+        [FromForm, MaxLength(500)] string? notes = null)
     {
+        RaceResult result = new RaceResult
+        {
+            ResultStatus = resultStatus,
+            DurationMilliseconds = durationMilliseconds,
+            OverallPosition = overallPosition,
+            CategoryPosition = categoryPosition,
+            Notes = notes
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can capture results.");
@@ -88,8 +104,23 @@ public class ResultsController : ApiControllerBase
     }
 
     [HttpPut("results/{resultId}")]
-    public IActionResult UpdateResult(int resultId, RaceResult newDetails)
+    public IActionResult UpdateResult(
+        int resultId,
+        [FromForm, Required, MaxLength(10)] string resultStatus,
+        [FromForm] long? durationMilliseconds = null,
+        [FromForm] int? overallPosition = null,
+        [FromForm] int? categoryPosition = null,
+        [FromForm, MaxLength(500)] string? notes = null)
     {
+        RaceResult newDetails = new RaceResult
+        {
+            ResultStatus = resultStatus,
+            DurationMilliseconds = durationMilliseconds,
+            OverallPosition = overallPosition,
+            CategoryPosition = categoryPosition,
+            Notes = notes
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update results.");
