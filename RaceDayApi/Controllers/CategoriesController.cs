@@ -26,8 +26,22 @@ public class CategoriesController : ApiControllerBase
     }
 
     [HttpPost("events/{eventId}/categories")]
-    public IActionResult CreateCategory(int eventId, Category category)
+    [Consumes("application/x-www-form-urlencoded")]
+    public IActionResult CreateCategory(int eventId, [FromForm] CategoryForm form)
     {
+        Category category = new Category
+        {
+            Name = form.Name,
+            Description = form.Description,
+            DistanceKm = form.DistanceKm,
+            EntryFee = form.EntryFee,
+            Capacity = form.Capacity,
+            MinimumAge = form.MinimumAge,
+            MaximumAge = form.MaximumAge,
+            CategoryStartTime = form.CategoryStartTime,
+            IsActive = form.IsActive
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can create categories.");
@@ -54,8 +68,22 @@ public class CategoriesController : ApiControllerBase
     }
 
     [HttpPut("categories/{categoryId}")]
-    public IActionResult UpdateCategory(int categoryId, Category newDetails)
+    [Consumes("application/x-www-form-urlencoded")]
+    public IActionResult UpdateCategory(int categoryId, [FromForm] CategoryForm form)
     {
+        Category newDetails = new Category
+        {
+            Name = form.Name,
+            Description = form.Description,
+            DistanceKm = form.DistanceKm,
+            EntryFee = form.EntryFee,
+            Capacity = form.Capacity,
+            MinimumAge = form.MinimumAge,
+            MaximumAge = form.MaximumAge,
+            CategoryStartTime = form.CategoryStartTime,
+            IsActive = form.IsActive
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update categories.");

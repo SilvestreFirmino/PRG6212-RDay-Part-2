@@ -35,7 +35,8 @@ public class ProfileController : ApiControllerBase
     }
 
     [HttpPut]
-    public IActionResult UpdateProfile(User newDetails)
+    [Consumes("application/x-www-form-urlencoded")]
+    public IActionResult UpdateProfile([FromForm] ProfileForm newDetails)
     {
         if (!LoggedIn())
         {
@@ -56,14 +57,22 @@ public class ProfileController : ApiControllerBase
         user.PhoneNumber = newDetails.PhoneNumber;
         user.UpdatedAtUtc = DateTime.UtcNow;
 
-        if (user.Role == Roles.Participant && user.ParticipantProfile != null && newDetails.ParticipantProfile != null)
+        if (user.Role == Roles.Participant && user.ParticipantProfile != null)
         {
-            user.ParticipantProfile.DateOfBirth = newDetails.ParticipantProfile.DateOfBirth;
-            user.ParticipantProfile.Gender = newDetails.ParticipantProfile.Gender;
-            user.ParticipantProfile.EmergencyContactName = newDetails.ParticipantProfile.EmergencyContactName;
-            user.ParticipantProfile.EmergencyContactPhone = newDetails.ParticipantProfile.EmergencyContactPhone;
-            user.ParticipantProfile.MedicalNotes = newDetails.ParticipantProfile.MedicalNotes;
-            user.ParticipantProfile.ClubName = newDetails.ParticipantProfile.ClubName;
+            if (newDetails.DateOfBirth.HasValue)
+            {
+                if (newDetails.DateOfBirth.Value.Date >= DateTime.UtcNow.Date)
+                    return BadRequest("Date of birth must be in the past.");
+                user.ParticipantProfile.DateOfBirth = newDetails.DateOfBirth.Value;
+            }
+            if (!string.IsNullOrWhiteSpace(newDetails.Gender))
+                user.ParticipantProfile.Gender = newDetails.Gender;
+            if (!string.IsNullOrWhiteSpace(newDetails.EmergencyContactName))
+                user.ParticipantProfile.EmergencyContactName = newDetails.EmergencyContactName;
+            if (!string.IsNullOrWhiteSpace(newDetails.EmergencyContactPhone))
+                user.ParticipantProfile.EmergencyContactPhone = newDetails.EmergencyContactPhone;
+            user.ParticipantProfile.MedicalNotes = newDetails.MedicalNotes;
+            user.ParticipantProfile.ClubName = newDetails.ClubName;
         }
 
         _db.SaveChanges();
