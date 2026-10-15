@@ -8,6 +8,16 @@ GO
 USE RaceDayDb;
 GO
 
+-- Required settings for the filtered bib-number index in both SSMS and sqlcmd.
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET QUOTED_IDENTIFIER ON;
+SET NUMERIC_ROUNDABORT OFF;
+GO
+
 -- Stores both Organiser and Participant accounts.
 CREATE TABLE Users
 (
