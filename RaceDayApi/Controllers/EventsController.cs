@@ -57,8 +57,26 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPost]
-    public IActionResult CreateEvent(RaceEvent raceEvent)
+    [Consumes("application/x-www-form-urlencoded")]
+    public IActionResult CreateEvent([FromForm] EventForm form)
     {
+        RaceEvent raceEvent = new RaceEvent
+        {
+            Name = form.Name,
+            Description = form.Description,
+            EventType = form.EventType,
+            StartDateTime = form.StartDateTime,
+            EndDateTime = form.EndDateTime,
+            TimeZoneId = form.TimeZoneId,
+            VenueName = form.VenueName,
+            AddressLine1 = form.AddressLine1,
+            City = form.City,
+            Province = form.Province,
+            PostalCode = form.PostalCode,
+            RegistrationOpenUtc = form.RegistrationOpenUtc,
+            RegistrationCloseUtc = form.RegistrationCloseUtc
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can create events.");
@@ -82,8 +100,26 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPut("{eventId}")]
-    public IActionResult UpdateEvent(int eventId, RaceEvent newDetails)
+    [Consumes("application/x-www-form-urlencoded")]
+    public IActionResult UpdateEvent(int eventId, [FromForm] EventForm form)
     {
+        RaceEvent newDetails = new RaceEvent
+        {
+            Name = form.Name,
+            Description = form.Description,
+            EventType = form.EventType,
+            StartDateTime = form.StartDateTime,
+            EndDateTime = form.EndDateTime,
+            TimeZoneId = form.TimeZoneId,
+            VenueName = form.VenueName,
+            AddressLine1 = form.AddressLine1,
+            City = form.City,
+            Province = form.Province,
+            PostalCode = form.PostalCode,
+            RegistrationOpenUtc = form.RegistrationOpenUtc,
+            RegistrationCloseUtc = form.RegistrationCloseUtc
+        };
+
         if (!IsOrganiser())
         {
             return Unauthorized("Only organisers can update events.");
@@ -126,7 +162,8 @@ public class EventsController : ApiControllerBase
     }
 
     [HttpPut("{eventId}/status")]
-    public IActionResult ChangeStatus(int eventId, StatusChange newStatus)
+    [Consumes("application/x-www-form-urlencoded")]
+    public IActionResult ChangeStatus(int eventId, [FromForm] StatusChange newStatus)
     {
         if (!IsOrganiser())
         {

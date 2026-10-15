@@ -8,16 +8,23 @@ namespace RaceDayApi.Controllers;
 [Route("api")]
 public class EnrollmentsController : ApiControllerBase
 {
-    private readonly RaceDayDbContext _db;
+    private readonly RaceDayDbContext _dbContext;
 
     public EnrollmentsController(RaceDayDbContext db)
     {
-        _db = db;
+               _dbContext = db;
     }
 
     [HttpPost("events/{eventId}/enrollments")]
-    public IActionResult Enrol(int eventId, EventEnrollment enrollment)
+    [Consumes("application/x-www-form-urlencoded")]
+    public IActionResult Enrol(int eventId, [FromForm] EnrollmentForm form)
     {
+        EventEnrollment enrollment = new EventEnrollment
+        {
+            CategoryId = form.CategoryId,
+            EmergencyConsent = form.EmergencyConsent
+        };
+
         if (!IsParticipant())
         {
             return Unauthorized("Only participants can enter an event.");
@@ -28,8 +35,8 @@ public class EnrollmentsController : ApiControllerBase
             return BadRequest("Emergency consent is required.");
         }
 
-        RaceEvent? raceEvent = _db.Events.Find(eventId);
-        Category? category = _db.Categories.Find(enrollment.CategoryId);
+        RaceEvent? raceEvent = _dbContext.Events.Find(eventId);
+        Category? category = _dbContext.Categories.Find(enrollment.CategoryId);
 
         if (raceEvent == null || category == null || category.EventId != eventId)
         {
@@ -46,7 +53,7 @@ public class EnrollmentsController : ApiControllerBase
             return BadRequest("Registration is currently closed.");
         }
 
-        bool alreadyEntered = _db.EventEnrollments.Any(e =>
+        bool alreadyEntered = _dbContext.EventEnrollments.Any(e =>
             e.EventId == eventId && e.ParticipantId == CurrentUserId);
 
         if (alreadyEntered)
@@ -54,7 +61,7 @@ public class EnrollmentsController : ApiControllerBase
             return BadRequest("You are already entered for this event.");
         }
 
-        int numberOfEntries = _db.EventEnrollments.Count(e =>
+        int numberOfEntries = _dbContext.EventEnrollments.Count(e =>
             e.CategoryId == category.CategoryId && e.Status != "Withdrawn");
 
         if (numberOfEntries >= category.Capacity)
@@ -71,8 +78,8 @@ public class EnrollmentsController : ApiControllerBase
         enrollment.PaymentStatus = "Unpaid";
         enrollment.EnrolledAtUtc = DateTime.UtcNow;
 
-        _db.EventEnrollments.Add(enrollment);
-        _db.SaveChanges();
+        _dbContext.EventEnrollments.Add(enrollment);
+        _dbContext.SaveChanges();
 
         return Ok("Event entry recorded successfully.");
     }
@@ -85,7 +92,7 @@ public class EnrollmentsController : ApiControllerBase
             return Unauthorized("Only participants can view their enrolments.");
         }
 
-        List<EventEnrollment> enrolments = _db.EventEnrollments
+        List<EventEnrollment> enrolments = _dbContext.EventEnrollments
             .Include(e => e.Event)
             .Include(e => e.Category)
             .Where(e => e.ParticipantId == CurrentUserId)
@@ -102,14 +109,14 @@ public class EnrollmentsController : ApiControllerBase
             return Unauthorized("Only organisers can view event enrolments.");
         }
 
-        RaceEvent? raceEvent = _db.Events.Find(eventId);
+        RaceEvent? raceEvent = _dbContext.Events.Find(eventId);
 
         if (raceEvent == null || raceEvent.OrganiserId != CurrentUserId)
         {
             return NotFound("Your event was not found.");
         }
 
-        List<EventEnrollment> enrolments = _db.EventEnrollments
+        List<EventEnrollment> enrolments = _dbContext.EventEnrollments
             .Include(e => e.Participant)
             .Include(e => e.Category)
             .Where(e => e.EventId == eventId)
