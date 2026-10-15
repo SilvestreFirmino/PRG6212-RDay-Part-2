@@ -1,18 +1,19 @@
 # RaceDay — South African Event Management System
 
-[![Validate RaceDay planning submission](https://github.com/SilvestreFirmino/RaceDay-Planning/actions/workflows/validate.yml/badge.svg)](https://github.com/SilvestreFirmino/RaceDay-Planning/actions/workflows/validate.yml)
+[![Planning and SQL validation](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/validate.yml/badge.svg)](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/validate.yml)
+[![API build and tests](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/api-tests.yml/badge.svg)](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/api-tests.yml)
 
-RaceDay is a planned full-stack, web-based event management system for South Africa's road running, walking, and cycling community. It replaces paper registrations, disconnected spreadsheets, and fragmented communication with one place to publish events, choose categories, manage entries, and record official results. This Part 1 repository defines the database and REST API contract that the C# API and MVC application will follow in Parts 2 and 3.
+RaceDay is an event management system for South Africa's running, walking and cycling community. Organisers manage events and results, while Participants browse events, enter a category and view their results. This repository contains the Part 1 planning documents and SQL script, plus the Part 2 C# ASP.NET Core Web API. The MVC interface is planned for Part 3.
 
 ## User roles
 
 ### Organiser
 
-An Organiser can create, edit, publish, complete, cancel, and—where safe—delete events they own. They manage event categories, review all enrolments for their events, assign bib numbers and payment states, and capture or correct official participant results. Ownership checks ensure one organiser cannot change another organiser's event data.
+An Organiser can create and update their events, change event status, delete draft events, manage categories, view their event enrolments, and capture or update results. The API checks the logged-in role and event ownership before allowing these actions.
 
 ### Participant
 
-A Participant can register an account, maintain a personal and emergency-contact profile, browse published events, choose one category when entering an event, view or withdraw their own enrolments, and track their personal result history. Participants cannot access organiser-only management routes or another participant's private enrolment history.
+A Participant can register, update their profile, browse available events and categories, enter an event by selecting a category, and view their own enrolments and results. Participant accounts cannot perform Organiser-only actions.
 
 ## Planning deliverables
 
@@ -28,23 +29,27 @@ A Participant can register an account, maintain a personal and emergency-contact
 
 ![RaceDay Entity Relationship Diagram](docs/raceday-erd.png)
 
-The data model contains `Users`, `ParticipantProfiles`, `Events`, `Categories`, `EventEnrollments`, and `Results`. The enrolment design uses a composite foreign key so a selected category must belong to the selected event; unique constraints also prevent duplicate event entry, duplicate event bibs, duplicate emails, and multiple results for one enrolment.
+The data model contains `Users`, `ParticipantProfiles`, `Events`, `Categories`, `EventEnrollments`, and `Results`. Unique constraints prevent duplicate event entries, duplicate event bibs, duplicate emails and multiple results for one enrolment. In the current implementation, the API checks that the selected category belongs to the event; the SQL script uses separate event and category foreign keys.
+
+Implementation differences from the original ERD: password hashes allow 512 characters; text columns use the SQL types in the script; minimum/maximum ages use `INT`; and the event/category match is enforced in the API rather than by the composite foreign key shown in the diagram. A user may organise many events, even though the current diagram labels the Events end as `0..1`.
 
 ## Run the SQL script in SSMS
 
 Requirements: SQL Server 2019 or later and SQL Server Management Studio (SSMS).
 
 1. Connect SSMS to a clean local SQL Server instance using an account allowed to create databases.
-2. Confirm that a database named `RaceDayDb` does not already exist. The script stops safely rather than deleting an existing database.
+2. Confirm that a database named `RaceDayDb` does not already exist on that instance. This is a first-time setup script; do not rerun it against your existing database.
 3. Open [`docs/raceday-database.sql`](docs/raceday-database.sql) in SSMS.
 4. Select **Execute**. Keep SQLCMD mode off; the standard `GO` batch separators are supported directly by SSMS.
-5. Confirm the final message is `RaceDayDb created and verified successfully.` and the summary row reports 4 users, 3 events, 8 categories, 4 enrolments, and 2 results.
+5. Confirm there are no SQL errors. The final six result grids should show 4 users, 2 participant profiles, 3 events, 9 categories, 3 enrolments and 2 results.
 
-All entity inserts run inside transactions with `XACT_ABORT ON`, and post-deployment checks raise explicit SQL Server errors if seed or role integrity is incorrect.
+The script ends with queries showing the seeded records. The GitHub Actions SQL job separately checks the expected user, event, category, enrolment and result counts on a clean SQL Server instance.
 
 ## Part 2 API setup and run instructions
 
 The Part 2 ASP.NET Core Web API is in [`RaceDayApi`](RaceDayApi). It uses Entity Framework Core Code First, SQL Server, session-based authentication, Swagger, and xUnit tests.
+
+Requirements: Visual Studio 2022 with ASP.NET development support, the .NET 6 SDK/runtime used by this project, and an accessible SQL Server instance. The default development connection uses `(localdb)\api_both` and database `RaceDayDb`. Keep the browser and API on the VM when the database is on that VM.
 
 1. Open `RaceDay.sln` in Visual Studio 2022.
 2. Set `RaceDayApi` as the startup project.
@@ -53,28 +58,34 @@ The Part 2 ASP.NET Core Web API is in [`RaceDayApi`](RaceDayApi). It uses Entity
 5. Run the API. Swagger opens at `/swagger`. Click **Try it out** to enter individual form fields. Register using the Participant/Organiser dropdown, log in using the email/password fields, then test the role-protected routes in the same browser session.
 6. Run the test suite with `dotnet test RaceDay.sln`.
 
+Registration and login use separate Swagger input boxes. Select `Participant` or `Organiser` during registration; login uses the role stored in the account. Participants must also enter their birth date, gender and emergency contact details because the current database requires them. Phone number, club and medical notes are optional profile details. Passwords are hashed before storage. The session remembers the user's ID and role until it expires or is cleared; logout clears it.
+
+The seeded demonstration accounts include `lerato@jozievents.co.za` (Organiser) and `nomsa@example.co.za` (Participant), both with password `Password123!`. These are sample accounts for local demonstrations only.
+
 The controllers use individual `[FromForm]` inputs, with no separate request/form classes or `[Consumes]` attributes. See the [simple code and video guide](docs/simple-code-and-video-guide.md) for explanations and replacement instructions. If you manually added `InputForms.cs` or `RegistrationDetails.cs` from an older ZIP, remove those old files when updating; this version uses `RegistrationRole.cs` for the dropdown. Do not paste new controller code below the old code.
 
 ## CI/CD validation
 
-This public submission repository is owned by the student GitHub account [`SilvestreFirmino`](https://github.com/SilvestreFirmino), and the Git history uses the verified student email supplied for the project.
+Repository: [SilvestreFirmino/PRG6212-RDay-Part-2](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2).
 
 The GitHub Actions workflow runs on every push and pull request to `main`. It performs two independent checks:
 
 1. validates the required repository files, PNG signature, six SQL entities, endpoint-plan coverage, README content, and minimum 20-commit history; and
-2. starts a clean SQL Server 2022 container, executes the complete script with error-stop behaviour, and verifies every seeded row count.
+2. starts a clean SQL Server 2022 container, executes the complete script with error-stop behaviour, and verifies the expected user, event, category, enrolment and result counts.
 
-The screenshot below records a successful run in which both the repository-structure job and the clean SQL Server execution job completed with green checks.
+The separate API workflow restores dependencies, builds the solution and runs the unit tests when API, test, solution or workflow files change. The unit tests use an in-memory database; the clean SQL job tests the SQL script against SQL Server. Run `pwsh ./scripts/validate-repository.ps1` locally to check repository structure.
+
+The screenshot below is retained from the earlier planning validation. Use the workflow badges above to check the latest runs; this image does not establish that the latest Part 2 API build passed.
 
 ![Successful RaceDay GitHub Actions build](docs/ci-success.png)
 
-[View the successful student-account clean-instance validation run](https://github.com/SilvestreFirmino/RaceDay-Planning/actions/runs/33749453678).
+[View the earlier planning validation run](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/runs/33749453678).
 
 ## Video walkthrough
 
 **Unlisted YouTube video:** [Watch the RaceDay Part 1 walkthrough](https://youtu.be/imDPdiAGPVE)
 
-The recording should use the student's own voice and show the planning documents, explain the ERD and cardinality choices, justify the endpoint plan, run the SQL script live in SSMS, and display the successful output. No AI-generated voice should be used.
+The Part 1 link above covers planning. The Part 2 video link still needs to be added after recording. Use your own voice to explain the code, demonstrate the running API in Swagger, show both roles and session login, and run the tests. Follow the [simple code and video guide](docs/simple-code-and-video-guide.md).
 
 ## Submission checklist
 
@@ -85,4 +96,6 @@ The recording should use the student's own voice and show the planning documents
 - [x] GitHub Actions structure and clean SQL Server validation workflow.
 - [x] Successful CI/CD screenshot embedded above.
 - [x] Unlisted YouTube walkthrough link added.
+- [ ] Add the separate Part 2 unlisted YouTube demonstration link.
+- [ ] Add a screenshot of the latest successful Part 2 API build and tests.
 - [ ] Final GitHub repository link submitted on ARC.
