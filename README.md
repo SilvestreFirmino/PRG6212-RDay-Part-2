@@ -85,7 +85,9 @@ The screenshot below is retained from the earlier planning validation. Use the w
 
 **Unlisted YouTube video:** [Watch the RaceDay Part 1 walkthrough](https://youtu.be/imDPdiAGPVE)
 
-The Part 1 link above covers planning. The Part 2 video link still needs to be added after recording. Use your own voice to explain the code, demonstrate the running API in Swagger, show both roles and session login, and run the tests. Follow the [simple code and video guide](docs/simple-code-and-video-guide.md).
+**Part 2 YouTube demonstration:** [Watch the RaceDay Part 2 API walkthrough](https://youtu.be/x1v-uPUyrsM)
+
+The Part 1 link covers planning; the Part 2 link is the API demonstration submitted for this assessment. The [simple code and video guide](docs/simple-code-and-video-guide.md) explains the code and demonstration steps.
 
 ## Submission checklist
 
@@ -96,6 +98,6 @@ The Part 1 link above covers planning. The Part 2 video link still needs to be a
 - [x] GitHub Actions structure and clean SQL Server validation workflow.
 - [x] Successful CI/CD screenshot embedded above.
 - [x] Unlisted YouTube walkthrough link added.
-- [ ] Add the separate Part 2 unlisted YouTube demonstration link.
+- [x] Add the separate Part 2 YouTube demonstration link.
 - [ ] Add a screenshot of the latest successful Part 2 API build and tests.
 - [ ] Final GitHub repository link submitted on ARC.
