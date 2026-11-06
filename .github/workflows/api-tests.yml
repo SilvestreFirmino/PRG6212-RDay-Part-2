@@ -3,12 +3,14 @@ name: Build and test RaceDay API
 on:
   push:
     paths:
+      - 'Part3/RaceDayMvc/**'
       - 'RaceDayApi/**'
       - 'RaceDayApi.Tests/**'
       - 'RaceDay.sln'
       - '.github/workflows/api-tests.yml'
   pull_request:
     paths:
+      - 'Part3/RaceDayMvc/**'
       - 'RaceDayApi/**'
       - 'RaceDayApi.Tests/**'
       - 'RaceDay.sln'
@@ -25,7 +27,7 @@ jobs:
           dotnet-version: '6.0.x'
       - name: Restore dependencies
         run: dotnet restore RaceDay.sln
-      - name: Build API
+      - name: Build API and MVC website
         run: dotnet build RaceDay.sln --configuration Release --no-restore
       - name: Run unit tests
         run: dotnet test RaceDay.sln --configuration Release --no-build --verbosity normal

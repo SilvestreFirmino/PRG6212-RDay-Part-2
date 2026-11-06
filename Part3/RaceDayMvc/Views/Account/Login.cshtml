@@ -1,0 +1,9 @@
+@model LoginForm
+@{ ViewData["Title"] = "Sign in"; }
+<h1>Sign in to RaceDay</h1>
+<p>Use your existing Organiser or Participant account.</p>
+<form asp-action="Login" method="post">
+<div asp-validation-summary="ModelOnly" role="alert"></div>
+<label asp-for="Email"></label><input asp-for="Email" autocomplete="username" required><span asp-validation-for="Email"></span>
+<label asp-for="Password"></label><input asp-for="Password" autocomplete="current-password" required><span asp-validation-for="Password"></span>
+<button type="submit">Sign in</button></form>

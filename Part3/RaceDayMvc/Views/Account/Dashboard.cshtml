@@ -1,0 +1,5 @@
+@model Profile
+@{ ViewData["Title"] = Model.Role == "Organiser" ? "Organiser dashboard" : "Participant home"; }
+<p class="eyebrow">@Model.Role</p><h1>@ViewData["Title"]</h1>
+<p>Welcome, @Model.FirstName.</p>
+<form asp-action="Logout" method="post"><button type="submit">Sign out</button></form>
