@@ -1,0 +1,26 @@
+name: Part 3 container journey
+on:
+  push:
+    branches: [main]
+    paths: ['Part3/**', 'RaceDayApi/**', 'compose.yaml', '.dockerignore', 'scripts/smoke-part3.py', '.github/workflows/part3-docker.yml', 'docs/*.sql']
+  pull_request:
+    paths: ['Part3/**', 'RaceDayApi/**', 'compose.yaml', '.dockerignore', 'scripts/smoke-part3.py', '.github/workflows/part3-docker.yml', 'docs/*.sql']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  container-journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start isolated demo stack
+        run: docker compose up --build -d
+      - name: Exercise the MVC website against SQL Server and blob emulator
+        run: python3 scripts/smoke-part3.py http://localhost:8080
+      - name: Show container diagnostics
+        if: failure()
+        run: docker compose logs --no-color --tail=150
+      - name: Stop containers
+        if: always()
+        run: docker compose down
