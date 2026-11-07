@@ -1,14 +1,107 @@
 @model EventPage
-@{ ViewData["Title"] = Model.Name; var role = Context.Session.GetString("Role"); }
+@{
+    ViewData["Title"] = Model.Name;
+    var role = Context.Session.GetString("Role");
+}
+
 <a asp-action="Index" class="back">← All events</a>
-<div class="detail-heading"><div><p class="eyebrow">@Model.EventType · @Model.City</p><h1>@Model.Name</h1><span class="badge-status @Model.Status.ToLowerInvariant()">@Model.Status</span></div><p>@Model.StartDateTime.ToString("dd MMM yyyy")<br>@Model.StartDateTime.ToString("HH:mm") – @Model.EndDateTime.ToString("HH:mm")</p></div>
-@if(Model.BannerUrl != null) { <img class="detail-banner" src="@Url.Action("Banner", new{id=Model.EventId})" alt="@Model.Name banner"> }
-<div class="two-columns"><section class="panel"><h2>About the event</h2><p class="description">@Model.Description</p><h3>Where to meet</h3><p>@Model.VenueName<br>@Model.AddressLine1, @Model.City<br>@Model.Province @Model.PostalCode</p><p>Registration closes: @Model.RegistrationCloseUtc.ToString("dd MMM yyyy HH:mm") UTC</p>
-<h3>Available categories</h3>@if(Model.Categories.Count == 0){<p>No categories have been added yet.</p>}else{<ul class="category-list">@foreach(var c in Model.Categories.Where(c=>c.IsActive)){<li><strong>@c.Name</strong><span>@c.DistanceKm km · R @c.EntryFee.ToString("N2")</span><small>Ages @(c.MinimumAge?.ToString() ?? "any") – @(c.MaximumAge?.ToString() ?? "any")</small></li>}</ul>}</section>
-<aside class="panel entry-panel"><p class="eyebrow">Be part of it</p><h2>Enter this event</h2>
-@if(role == "Participant") {
-<form asp-controller="Participant" asp-action="Enrol" method="post"><input type="hidden" name="eventId" value="@Model.EventId">
-<label for="categoryId">Choose your distance / category</label><select name="categoryId" id="categoryId" required><option value="">Select a category</option>@foreach(var c in Model.Categories.Where(c=>c.IsActive)){<option value="@c.CategoryId">@c.Name — @c.DistanceKm km — R @c.EntryFee.ToString("N2")</option>}</select>
-<label class="checkbox"><input type="checkbox" name="emergencyConsent" value="true" required> I consent to use of my emergency contact for this event.</label><button type="submit">Confirm entry</button><small>The API checks availability and registration dates before accepting your entry.</small></form>
-} else if(role == "Organiser"){<p>Event entries are available to Participant accounts.</p>}else{<p>Sign in as a Participant to choose your category and enter.</p><a class="button" asp-controller="Account" asp-action="Login">Sign in to enter</a><p>New here? <a asp-controller="Account" asp-action="Register">Create an account</a></p>}
-</aside></div>
+
+@* ---------- Heading ---------- *@
+<div class="detail-heading">
+    <div>
+        <p class="eyebrow">@Model.EventType · @Model.City</p>
+        <h1>@Model.Name</h1>
+        <span class="badge-status @Model.Status.ToLowerInvariant()">@Model.Status</span>
+    </div>
+    <p>
+        @Model.StartDateTime.ToString("dd MMM yyyy")<br>
+        @Model.StartDateTime.ToString("HH:mm") – @Model.EndDateTime.ToString("HH:mm")
+    </p>
+</div>
+
+@* ---------- Banner ---------- *@
+@if (Model.BannerUrl != null)
+{
+    <img class="detail-banner"
+         src="@Url.Action("Banner", new { id = Model.EventId })"
+         alt="@Model.Name banner">
+}
+
+<div class="two-columns">
+
+    @* ---------- Left column: event info ---------- *@
+    <section class="panel">
+        <h2>About the event</h2>
+        <p class="description">@Model.Description</p>
+
+        <h3>Where to meet</h3>
+        <p>
+            @Model.VenueName<br>
+            @Model.AddressLine1, @Model.City<br>
+            @Model.Province @Model.PostalCode
+        </p>
+        <p>Registration closes: @Model.RegistrationCloseUtc.ToString("dd MMM yyyy HH:mm") UTC</p>
+
+        <h3>Available categories</h3>
+        @if (Model.Categories.Count == 0)
+        {
+            <p>No categories have been added yet.</p>
+        }
+        else
+        {
+            <ul class="category-list">
+                @foreach (var c in Model.Categories.Where(c => c.IsActive))
+                {
+                    <li>
+                        <strong>@c.Name</strong>
+                        <span>@c.DistanceKm km · R @c.EntryFee.ToString("N2")</span>
+                        <small>Ages @(c.MinimumAge?.ToString() ?? "any") – @(c.MaximumAge?.ToString() ?? "any")</small>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+
+    @* ---------- Right column: entry panel ---------- *@
+    <aside class="panel entry-panel">
+        <p class="eyebrow">Be part of it</p>
+        <h2>Enter this event</h2>
+
+        @if (role == "Participant")
+        {
+            <form asp-controller="Participant" asp-action="Enrol" method="post">
+                <input type="hidden" name="eventId" value="@Model.EventId">
+
+                <label for="categoryId">Choose your distance / category</label>
+                <select name="categoryId" id="categoryId" required>
+                    <option value="">Select a category</option>
+                    @foreach (var c in Model.Categories.Where(c => c.IsActive))
+                    {
+                        <option value="@c.CategoryId">
+                            @c.Name — @c.DistanceKm km — R @c.EntryFee.ToString("N2")
+                        </option>
+                    }
+                </select>
+
+                <label class="checkbox">
+                    <input type="checkbox" name="emergencyConsent" value="true" required>
+                    I consent to use of my emergency contact for this event.
+                </label>
+
+                <button type="submit">Confirm entry</button>
+                <small>The API checks availability and registration dates before accepting your entry.</small>
+            </form>
+        }
+        else if (role == "Organiser")
+        {
+            <p>Event entries are available to Participant accounts.</p>
+        }
+        else
+        {
+            <p>Sign in as a Participant to choose your category and enter.</p>
+            <a class="button" asp-controller="Account" asp-action="Login">Sign in to enter</a>
+            <p>New here? <a asp-controller="Account" asp-action="Register">Create an account</a></p>
+        }
+    </aside>
+
+</div>
