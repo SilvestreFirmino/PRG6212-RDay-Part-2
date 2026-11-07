@@ -72,7 +72,7 @@ def main():
         assert "/Account/Login" not in target, "Login failed"
     page, _ = participant.get("/Organiser")
     assert "This page is for Organiser" in page
-    now = dt.datetime.utcnow().replace(microsecond=0)
+    now = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None, microsecond=0)
     dates = lambda days: (now + dt.timedelta(days=days)).isoformat(timespec="minutes")
     name = "Smoke Race " + suffix
     event = dict(EventId="0", Name=name, Description="Integration test event", EventType="Running",
@@ -94,7 +94,9 @@ def main():
     assert "10 km" in page, "Category creation failed"
     organiser.post("/Organiser", "/Organiser/Status", dict(eventId=event_id, status="Published"))
     page, _ = participant.get("/Home/Details/" + event_id)
-    category_id = re.search(r'<option value="(\d+)">10 km', page)[1]
+    category_match = re.search(r'<option\b[^>]*\bvalue="(\d+)"[^>]*>\s*10 km\b', page)
+    assert category_match, "The published event did not show the new 10 km category to the Participant"
+    category_id = category_match[1]
     page, _ = participant.post("/Home/Details/" + event_id, "/Participant/Enrol", dict(eventId=event_id, categoryId=category_id, emergencyConsent="true"))
     assert name in page and "Pending" in page, "Entry not visible"
     page, _ = participant.post("/Home/Details/" + event_id, "/Participant/Enrol", dict(eventId=event_id, categoryId=category_id, emergencyConsent="true"))

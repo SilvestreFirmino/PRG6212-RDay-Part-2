@@ -111,7 +111,7 @@ The screenshot below is retained from the earlier planning validation. Use the w
 
 ## Video walkthrough
 
-**Part 3:** recording still required. Demonstrate the complete website, actual Azure uploads and Docker, then add your unlisted link here. See the [video guide](docs/part3-guide.md).
+**Part 3 YouTube demonstration:** [Watch the RaceDay Part 3 MVC walkthrough](https://youtu.be/k7un6_2wdAA). See the [video guide](docs/part3-guide.md) for the demonstration checklist.
 
 **Unlisted YouTube video:** [Watch the RaceDay Part 1 walkthrough](https://youtu.be/imDPdiAGPVE)
 
