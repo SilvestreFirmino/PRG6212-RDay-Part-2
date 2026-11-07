@@ -18,10 +18,13 @@ public class EventsController : ApiControllerBase
 
     // Anyone can see published and completed events.
     [HttpGet]
-    public IActionResult GetEvents()
+    public IActionResult GetEvents(string? city = null, string? eventType = null, bool upcoming = false)
     {
         List<RaceEvent> events = _db.Events
             .Where(e => e.Status == "Published" || e.Status == "Completed")
+            .Where(e => city == null || e.City.Contains(city))
+            .Where(e => eventType == null || e.EventType == eventType)
+            .Where(e => !upcoming || (e.Status == "Published" && e.StartDateTime > DateTime.Now))
             .OrderBy(e => e.StartDateTime)
             .ToList();
 
@@ -33,7 +36,7 @@ public class EventsController : ApiControllerBase
     {
         RaceEvent? raceEvent = _db.Events.Find(eventId);
 
-        if (raceEvent == null)
+        if (raceEvent == null || (raceEvent.Status != "Published" && raceEvent.Status != "Completed" && raceEvent.OrganiserId != CurrentUserId))
         {
             return NotFound("Event not found.");
         }
@@ -95,6 +98,10 @@ public class EventsController : ApiControllerBase
             return Unauthorized("Only organisers can create events.");
         }
 
+        if (eventType != "Running" && eventType != "Walking" && eventType != "Cycling")
+            return BadRequest("Choose Running, Walking or Cycling.");
+        if (registrationCloseUtc <= registrationOpenUtc || registrationCloseUtc > startDateTime)
+            return BadRequest("Registration must close after opening and before the event starts.");
         if (raceEvent.EndDateTime <= raceEvent.StartDateTime)
         {
             return BadRequest("The end date must be after the start date.");
@@ -109,7 +116,7 @@ public class EventsController : ApiControllerBase
         _db.Events.Add(raceEvent);
         _db.SaveChanges();
 
-        return Ok("Event created successfully.");
+        return Ok(new { raceEvent.EventId, Message = "Event created successfully." });
     }
 
     [HttpPut("{eventId}")]
@@ -163,6 +170,10 @@ public class EventsController : ApiControllerBase
             return BadRequest("A completed or cancelled event cannot be changed.");
         }
 
+        if (eventType != "Running" && eventType != "Walking" && eventType != "Cycling")
+            return BadRequest("Choose Running, Walking or Cycling.");
+        if (registrationCloseUtc <= registrationOpenUtc || registrationCloseUtc > startDateTime)
+            return BadRequest("Registration must close after opening and before the event starts.");
         if (newDetails.EndDateTime <= newDetails.StartDateTime)
         {
             return BadRequest("The end date must be after the start date.");
@@ -237,6 +248,8 @@ public class EventsController : ApiControllerBase
             return BadRequest("Only a draft event can be deleted.");
         }
 
+        if (_db.EventEnrollments.Any(e => e.EventId == eventId))
+            return BadRequest("An event with enrolments cannot be deleted. Cancel it instead.");
         _db.Events.Remove(raceEvent);
         _db.SaveChanges();
 

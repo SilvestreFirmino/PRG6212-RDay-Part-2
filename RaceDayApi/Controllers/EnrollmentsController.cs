@@ -45,6 +45,15 @@ public class EnrollmentsController : ApiControllerBase
             return NotFound("The event or category was not found.");
         }
 
+        if (!category.IsActive) return BadRequest("This category is not available.");
+        var profile = _db.ParticipantProfiles.FirstOrDefault(p => p.UserId == CurrentUserId);
+        if (profile != null)
+        {
+            int age = raceEvent.StartDateTime.Year - profile.DateOfBirth.Year;
+            if (profile.DateOfBirth.Date > raceEvent.StartDateTime.Date.AddYears(-age)) age--;
+            if (age < category.MinimumAge || age > category.MaximumAge)
+                return BadRequest("Your age does not match this category's age range.");
+        }
         if (raceEvent.Status != "Published")
         {
             return BadRequest("This event is not open for entries.");

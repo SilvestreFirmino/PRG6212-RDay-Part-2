@@ -19,8 +19,10 @@ public class CategoriesController : ApiControllerBase
     [HttpGet("events/{eventId}/categories")]
     public IActionResult GetCategories(int eventId)
     {
+        var race = _db.Events.Find(eventId);
+        if (race == null || (race.Status != "Published" && race.Status != "Completed" && race.OrganiserId != CurrentUserId)) return NotFound();
         List<Category> categories = _db.Categories
-            .Where(c => c.EventId == eventId && c.IsActive)
+            .Where(c => c.EventId == eventId && (c.IsActive || race.OrganiserId == CurrentUserId))
             .ToList();
 
         return Ok(categories);
@@ -64,6 +66,10 @@ public class CategoriesController : ApiControllerBase
             return NotFound("Your event was not found.");
         }
 
+        if (distanceKm <= 0 || entryFee < 0 || capacity < 1 || minimumAge < 0 || maximumAge < 0)
+            return BadRequest("Distance and capacity must be positive; fees and ages cannot be negative.");
+        if (_db.Categories.Any(c => c.EventId == eventId && c.Name == name))
+            return BadRequest("A category with that name already exists.");
         if (category.MaximumAge.HasValue && category.MinimumAge > category.MaximumAge)
         {
             return BadRequest("Maximum age must be greater than minimum age.");
@@ -116,6 +122,10 @@ public class CategoriesController : ApiControllerBase
             return NotFound("Your category was not found.");
         }
 
+        if (distanceKm <= 0 || entryFee < 0 || capacity < 1 || minimumAge < 0 || maximumAge < 0 || minimumAge > maximumAge)
+            return BadRequest("Check category distance, fee, capacity and age limits.");
+        if (_db.Categories.Any(c => c.EventId == category.EventId && c.Name == name && c.CategoryId != categoryId))
+            return BadRequest("A category with that name already exists.");
         category.Name = newDetails.Name;
         category.Description = newDetails.Description;
         category.DistanceKm = newDetails.DistanceKm;
