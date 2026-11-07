@@ -1,0 +1,6 @@
+@model List<EntryPage>
+@{ViewData["Title"]="My events";}
+<div class="section-heading"><div><p class="eyebrow">Participant space</p><h1>You're on the start list.</h1></div><a class="button" asp-controller="Home" asp-action="Index">Find another event</a></div>
+<div class="panel table-responsive"><table class="table"><thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Status</th></tr></thead><tbody>
+@foreach(var e in Model){<tr><td><a asp-controller="Home" asp-action="Details" asp-route-id="@e.EventId">@e.EventName</a></td><td>@e.StartDateTime.ToString("dd MMM yyyy HH:mm")</td><td>@e.CategoryName</td><td><span class="badge-status @e.Status.ToLowerInvariant()">@e.Status</span></td></tr>}
+</tbody></table>@if(!Model.Any()){<p>You haven't entered an event yet. Browse upcoming events to find your next start line.</p>}</div>

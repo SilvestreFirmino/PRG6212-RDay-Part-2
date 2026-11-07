@@ -1,0 +1,6 @@
+@model List<EntryPage>
+@{ViewData["Title"]="My results";}
+<p class="eyebrow">Your finish lines</p><h1>Every result tells a story.</h1>
+<div class="panel table-responsive"><table class="table"><thead><tr><th>Event</th><th>Category</th><th>Status</th><th>Finish time</th><th>Overall</th><th>Category place</th></tr></thead><tbody>
+@foreach(var r in Model){<tr><td>@r.EventName</td><td>@r.CategoryName</td><td>@r.ResultStatus</td><td><strong>@r.FinishTime</strong></td><td>@(r.OverallPosition?.ToString() ?? "—")</td><td>@(r.CategoryPosition?.ToString() ?? "—")</td></tr>}
+</tbody></table>@if(!Model.Any()){<p>No results yet. Your organiser publishes them after the event has finished.</p>}</div>

@@ -1,0 +1,14 @@
+@model ProfilePage
+@{ViewData["Title"]="My profile";}
+<p class="eyebrow">Your account</p><h1>My profile</h1>
+<form asp-action="Index" method="post" class="panel"><div asp-validation-summary="All" role="alert" class="validation"></div>
+<div class="field-grid"><div><label asp-for="FirstName">First name</label><input asp-for="FirstName" required></div><div><label asp-for="LastName">Surname</label><input asp-for="LastName" required></div></div>
+<label asp-for="PhoneNumber">Phone number (optional)</label><input asp-for="PhoneNumber" type="tel">
+@if(Context.Session.GetString("Role")=="Participant"){
+<fieldset><legend>Participant details</legend><label asp-for="ParticipantProfile!.DateOfBirth">Date of birth</label><input asp-for="ParticipantProfile!.DateOfBirth" type="date">
+<label asp-for="ParticipantProfile!.Gender">Gender</label><input asp-for="ParticipantProfile!.Gender">
+<label asp-for="ParticipantProfile!.EmergencyContactName">Emergency contact</label><input asp-for="ParticipantProfile!.EmergencyContactName">
+<label asp-for="ParticipantProfile!.EmergencyContactPhone">Emergency phone</label><input asp-for="ParticipantProfile!.EmergencyContactPhone" type="tel">
+<label asp-for="ParticipantProfile!.MedicalNotes">Medical notes (optional)</label><textarea asp-for="ParticipantProfile!.MedicalNotes"></textarea>
+<label asp-for="ParticipantProfile!.ClubName">Club (optional)</label><input asp-for="ParticipantProfile!.ClubName"></fieldset>}
+<button type="submit">Save profile</button></form>
