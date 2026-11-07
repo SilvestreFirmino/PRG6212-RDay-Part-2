@@ -8,7 +8,10 @@ public class MvcProgram
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddControllersWithViews(options =>
-            options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+        {
+            options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+            options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+        });
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddDistributedMemoryCache();
         builder.Services.AddSession(options =>

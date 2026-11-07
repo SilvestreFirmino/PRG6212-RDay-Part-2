@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.36" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.36" />
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
@@ -17,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RaceDayApi\RaceDayApi.csproj" />
+    <ProjectReference Include="..\Part3\RaceDayMvc\RaceDayMvc.csproj" />
   </ItemGroup>
 
   <ItemGroup>
