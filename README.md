@@ -3,9 +3,37 @@
 [![Planning and SQL validation](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/validate.yml/badge.svg)](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/validate.yml)
 [![API build and tests](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/api-tests.yml/badge.svg)](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/api-tests.yml)
 
-RaceDay is an event management system for South Africa's running, walking and cycling community. Organisers manage events and results, while Participants browse events, enter a category and view their results. This repository contains the Part 1 planning documents and SQL script, plus the Part 2 C# ASP.NET Core Web API. The MVC interface is planned for Part 3.
+RaceDay is an event management system for South Africa's running, walking and cycling community. Organisers manage events and results, while Participants browse events, enter a category and view their results. This repository contains Part 1 planning and SQL, the Part 2 API and the Part 3 MVC website.
+
+## Part 3: run the complete website
+
+Read the [step-by-step setup and video guide](docs/part3-guide.md). The website includes registration, role-specific navigation, event/category management, banner uploads, enrolments, results and profiles. All data operations pass through the API; MVC has no SQL or Azure connection.
+
+**Existing VM database:** run [part3-upgrade.sql](docs/part3-upgrade.sql) in SSMS, then start both RaceDayApi and RaceDayMvc in Visual Studio. Open https://localhost:7046. Keep the API running at https://localhost:7036.
+
+**Docker:** with Docker Desktop running Linux containers, execute from the repository root:
+
+```powershell
+docker compose up --build -d
+```
+
+Open http://localhost:8080. This starts MVC, API, SQL Server and a local Azure Blob emulator. Data persists in named volumes. Stop with `docker compose down`.
+
+For real Azure banner uploads, follow the guide's User Secrets or local `.env` instructions. Never commit access keys. The emulator verifies integration locally; it does not replace the assignment's actual Azure demonstration.
+
+[![Part 3 container journey](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/part3-docker.yml/badge.svg)](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/workflows/part3-docker.yml)
+
+Verified on commit `622ce71`: [API/MVC build and tests](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/runs/42365061259), [clean SQL validation](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/runs/42365061338), and [Docker website journey](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/runs/42365061273). The journey checks registration, isolated roles, event/banner creation, categories, enrolments, duplicate rejection, results, profile editing and logout against SQL Server and Azurite.
+
+Part 3 adds optional `Events.BannerUrl` to the original ERD. Existing databases use the non-destructive upgrade script; fresh databases already include this field. Additional API routes are listed in [Part 3 API additions](docs/part3-endpoints.md).
+
+The code retains .NET 6 for compatibility with the existing class project. Use its runtime for local tests; upgrade before a public production deployment.
 
 ## User roles
+
+![Successful Part 3 Docker build and full website test](docs/part3-ci-success.png)
+
+Screenshot of the [successful Part 3 container run](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/runs/42365061273) on 7 November 2026.
 
 ### Organiser
 
@@ -82,6 +110,8 @@ The screenshot below is retained from the earlier planning validation. Use the w
 [View the earlier planning validation run](https://github.com/SilvestreFirmino/PRG6212-RDay-Part-2/actions/runs/33749453678).
 
 ## Video walkthrough
+
+**Part 3:** recording still required. Demonstrate the complete website, actual Azure uploads and Docker, then add your unlisted link here. See the [video guide](docs/part3-guide.md).
 
 **Unlisted YouTube video:** [Watch the RaceDay Part 1 walkthrough](https://youtu.be/imDPdiAGPVE)
 

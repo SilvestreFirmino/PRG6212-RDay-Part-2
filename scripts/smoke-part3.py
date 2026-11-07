@@ -85,7 +85,7 @@ def main():
     assert match, "New event link missing"
     event_id = match[1]
     page, _ = organiser.get("/Home/Details/" + event_id)
-    assert "event banner" not in page or "banner" in page
+    assert name in page, "Saved event details missing"
     with organiser.opener.open(BASE + "/Home/Banner/" + event_id) as response:
         assert response.read().startswith(b"\x89PNG"), "Azure banner was not returned through API/MVC"
     category_url = "/Organiser/Category?eventId=" + event_id
