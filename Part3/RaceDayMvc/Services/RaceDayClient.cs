@@ -70,7 +70,7 @@ public class RaceDayClient
         if (response.Content.Headers.ContentType?.MediaType == "application/json")
         {
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            if (doc.RootElement.TryGetProperty("eventId", out var id)) return id.GetInt32();
+            if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("eventId", out var id)) return id.GetInt32();
         }
         return 0;
     }

@@ -54,7 +54,7 @@ def main():
             page, _ = visitor.get("/Account/Login")
             if "Sign in to RaceDay" in page:
                 break
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
             pass
         time.sleep(2)
     else:
