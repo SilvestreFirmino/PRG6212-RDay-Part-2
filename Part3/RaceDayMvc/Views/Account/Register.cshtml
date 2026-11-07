@@ -1,0 +1,16 @@
+@model RegisterPage
+@{ ViewData["Title"] = "Create your account"; }
+<div class="auth-layout"><div><p class="eyebrow">Your next start line</p><h1>Join the<br>RaceDay community.</h1><p>Find your event. Make your entry. Keep your results.</p></div>
+<section class="panel"><h2>Create an account</h2><form method="post" asp-action="Register">
+<div asp-validation-summary="All" class="validation" role="alert"></div>
+<div class="field-grid"><div><label asp-for="FirstName">First name</label><input asp-for="FirstName" autocomplete="given-name" required></div>
+<div><label asp-for="LastName">Surname</label><input asp-for="LastName" autocomplete="family-name" required></div></div>
+<label asp-for="Email"></label><input asp-for="Email" autocomplete="username" required>
+<label asp-for="Password"></label><input asp-for="Password" autocomplete="new-password" required minlength="8"><small>At least eight characters.</small>
+<label asp-for="Role">I am joining as</label><select asp-for="Role" id="registration-role"><option>Participant</option><option>Organiser</option></select>
+<fieldset id="participant-fields"><legend>Participant details</legend><small>These details support your race entry and emergency contact.</small>
+<label asp-for="DateOfBirth">Date of birth</label><input asp-for="DateOfBirth" type="date">
+<label asp-for="Gender"></label><select asp-for="Gender"><option value="">Choose</option><option>Female</option><option>Male</option><option>Other</option><option>Prefer not to say</option></select>
+<label asp-for="EmergencyContactName">Emergency contact name</label><input asp-for="EmergencyContactName">
+<label asp-for="EmergencyContactPhone">Emergency contact phone</label><input asp-for="EmergencyContactPhone" type="tel"></fieldset>
+<button type="submit">Create account</button><p>Already registered? <a asp-action="Login">Sign in</a></p></form></section></div>
