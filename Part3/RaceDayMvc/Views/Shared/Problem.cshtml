@@ -1,0 +1,5 @@
+@model string
+@{ ViewData["Title"] = "Unable to complete request"; }
+<section class="panel"><p class="eyebrow">Let's try again</p><h1>We couldn't complete that request</h1>
+<p role="alert">@Model</p><a class="button" asp-controller="Home" asp-action="Index">Browse events</a>
+<a asp-controller="Account" asp-action="Login">Sign in</a></section>
