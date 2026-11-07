@@ -86,6 +86,8 @@ public class ResultsController : ApiControllerBase
             return BadRequest("This enrolment already has a result.");
         }
 
+        if (!ValidResult(resultStatus, durationMilliseconds, overallPosition, categoryPosition))
+            return BadRequest("Choose a valid result status. Finished results need a positive time and position.");
         if (result.ResultStatus == "Finished" &&
             (!result.DurationMilliseconds.HasValue || !result.OverallPosition.HasValue))
         {
@@ -137,6 +139,8 @@ public class ResultsController : ApiControllerBase
             return NotFound("Your result was not found.");
         }
 
+        if (!ValidResult(resultStatus, durationMilliseconds, overallPosition, categoryPosition))
+            return BadRequest("Choose a valid result status. Finished results need a positive time and position.");
         result.ResultStatus = newDetails.ResultStatus;
         result.DurationMilliseconds = newDetails.DurationMilliseconds;
         result.OverallPosition = newDetails.OverallPosition;
@@ -146,5 +150,11 @@ public class ResultsController : ApiControllerBase
 
         _db.SaveChanges();
         return Ok("Result updated successfully.");
+    }
+    private static bool ValidResult(string status, long? time, int? overall, int? category)
+    {
+        if (status != "Finished" && status != "DNF" && status != "DNS" && status != "DSQ") return false;
+        if (time <= 0 || overall <= 0 || category <= 0) return false;
+        return status != "Finished" || (time.HasValue && overall.HasValue);
     }
 }
