@@ -1,0 +1,13 @@
+@model List<EventPage>
+@{ ViewData["Title"] = "Find your next event"; }
+<section class="hero"><div><p class="eyebrow">Running · Walking · Cycling</p><h1>Your next<br><em>start line.</em></h1><p>Discover road events across South Africa.<br>Find your distance, enter your race, and make it count.</p><a class="button" href="#events">Explore events <span aria-hidden="true">↗</span></a></div><div class="track-art" aria-hidden="true"><span>ON YOUR<br>MARKS.</span></div></section>
+<section id="events"><div class="section-heading"><div><p class="eyebrow">The calendar</p><h2>Upcoming events</h2></div><span>@Model.Count events found</span></div>
+<form method="get" class="filter-bar"><div><label for="city">City</label><input id="city" name="city" value="@ViewBag.City" placeholder="Any city"></div>
+<div><label for="eventType">Activity</label><select id="eventType" name="eventType"><option value="">All activities</option>@foreach(var t in new[]{"Running","Walking","Cycling"}) { <option value="@t" selected="@(ViewBag.EventType == t)">@t</option> }</select></div><button type="submit">Find events</button><a asp-action="Index">Reset</a></form>
+@if(Model.Count == 0) { <div class="empty"><h3>No upcoming events match your search.</h3><p>Try another city or activity, or check back when organisers publish their next events.</p></div> }
+<div class="event-grid">@foreach(var race in Model) {
+<article class="event-card"><a asp-action="Details" asp-route-id="@race.EventId" class="image-link">
+@if(race.BannerUrl != null) { <img src="@Url.Action("Banner",new{id=race.EventId})" alt="@race.Name event banner" loading="lazy"> }
+else { <div class="event-art" aria-hidden="true"><span>@race.EventType</span></div> }</a>
+<div class="card-body"><p class="eyebrow">@race.EventType · @race.City</p><h3><a asp-action="Details" asp-route-id="@race.EventId">@race.Name</a></h3><p>@race.StartDateTime.ToString("ddd, dd MMM yyyy · HH:mm")</p><a class="text-link" asp-action="Details" asp-route-id="@race.EventId">Event details ↗</a></div></article>
+}</div></section>
