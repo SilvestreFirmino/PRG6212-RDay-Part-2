@@ -1,10 +1,100 @@
 @model List<EventPage>
-@{ ViewData["Title"] = "Organiser dashboard"; }
-<div class="section-heading"><div><p class="eyebrow">Organiser workspace</p><h1>Your events, at a glance.</h1></div><a class="button" asp-action="Create">+ Create event</a></div>
-<div class="stats"><div><strong>@Model.Count</strong><span>Your events</span></div><div><strong>@Model.Sum(e=>e.EnrolmentCount)</strong><span>Total enrolments</span></div><div><strong>@Model.Count(e=>e.StartDateTime > DateTime.Now && e.Status != "Cancelled")</strong><span>Upcoming events</span></div></div>
-<section class="panel"><h2>Manage your events</h2>@if(!Model.Any()){<p>Your first event starts here. Choose Create event above.</p>}
-<div class="table-responsive"><table class="table"><thead><tr><th>Event</th><th>Date</th><th>Enrolments</th><th>Status</th><th>Manage</th></tr></thead><tbody>@foreach(var race in Model){<tr>
-<td><strong>@race.Name</strong><small>@race.City</small></td><td>@race.StartDateTime.ToString("dd MMM yyyy HH:mm")</td><td>@race.EnrolmentCount</td><td><span class="badge-status @race.Status.ToLowerInvariant()">@race.Status</span></td>
-<td><div class="action-links"><a asp-action="Edit" asp-route-id="@race.EventId">Edit</a><a asp-action="Categories" asp-route-id="@race.EventId">Categories</a><a asp-action="Enrolments" asp-route-id="@race.EventId">Enrolments & results</a><a asp-controller="Home" asp-action="Details" asp-route-id="@race.EventId">Preview</a></div>
-<form asp-action="Status" method="post" class="inline"><input type="hidden" name="eventId" value="@race.EventId"><select name="status" aria-label="Status for @race.Name">@foreach(var s in new[]{"Draft","Published","Completed","Cancelled"}){<option selected="@(race.Status==s)">@s</option>}</select><button class="secondary small" type="submit">Update</button></form>
-@if(race.Status=="Draft"){<form asp-action="Delete" method="post" data-confirm="Delete this draft event?"><input type="hidden" name="eventId" value="@race.EventId"><button class="danger small" type="submit">Delete draft</button></form>}</td></tr>}</tbody></table></div></section>
+@{
+    ViewData["Title"] = "Organiser dashboard";
+}
+
+@* ---------- Heading + create button ---------- *@
+<div class="section-heading">
+    <div>
+        <p class="eyebrow">Organiser workspace</p>
+        <h1>Your events, at a glance.</h1>
+    </div>
+    <a class="button" asp-action="Create">+ Create event</a>
+</div>
+
+@* ---------- Stats ---------- *@
+<div class="stats">
+    <div>
+        <strong>@Model.Count</strong>
+        <span>Your events</span>
+    </div>
+    <div>
+        <strong>@Model.Sum(e => e.EnrolmentCount)</strong>
+        <span>Total enrolments</span>
+    </div>
+    <div>
+        <strong>@Model.Count(e => e.StartDateTime > DateTime.Now && e.Status != "Cancelled")</strong>
+        <span>Upcoming events</span>
+    </div>
+</div>
+
+@* ---------- Events table ---------- *@
+<section class="panel">
+    <h2>Manage your events</h2>
+
+    @* Empty state *@
+    @if (!Model.Any())
+    {
+        <p>Your first event starts here. Choose Create event above.</p>
+    }
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Date</th>
+                    <th>Enrolments</th>
+                    <th>Status</th>
+                    <th>Manage</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var race in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@race.Name</strong>
+                            <small>@race.City</small>
+                        </td>
+                        <td>@race.StartDateTime.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>@race.EnrolmentCount</td>
+                        <td>
+                            <span class="badge-status @race.Status.ToLowerInvariant()">@race.Status</span>
+                        </td>
+                        <td>
+                            @* Navigation links *@
+                            <div class="action-links">
+                                <a asp-action="Edit" asp-route-id="@race.EventId">Edit</a>
+                                <a asp-action="Categories" asp-route-id="@race.EventId">Categories</a>
+                                <a asp-action="Enrolments" asp-route-id="@race.EventId">Enrolments & results</a>
+                                <a asp-controller="Home" asp-action="Details" asp-route-id="@race.EventId">Preview</a>
+                            </div>
+
+                            @* Change status *@
+                            <form asp-action="Status" method="post" class="inline">
+                                <input type="hidden" name="eventId" value="@race.EventId">
+                                <select name="status" aria-label="Status for @race.Name">
+                                    @foreach (var s in new[] { "Draft", "Published", "Completed", "Cancelled" })
+                                    {
+                                        <option selected="@(race.Status == s)">@s</option>
+                                    }
+                                </select>
+                                <button class="secondary small" type="submit">Update</button>
+                            </form>
+
+                            @* Delete (drafts only) *@
+                            @if (race.Status == "Draft")
+                            {
+                                <form asp-action="Delete" method="post" data-confirm="Delete this draft event?">
+                                    <input type="hidden" name="eventId" value="@race.EventId">
+                                    <button class="danger small" type="submit">Delete draft</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

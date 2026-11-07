@@ -1,15 +1,109 @@
 @model EventPage
-@{ ViewData["Title"] = Model.EventId == 0 ? "Create event" : "Edit event"; }
-<a class="back" asp-action="Index">← Your events</a><h1>@ViewData["Title"]</h1><p>Save the event, add its distance categories, then publish it from your dashboard.</p>
+@{
+    ViewData["Title"] = Model.EventId == 0 ? "Create event" : "Edit event";
+}
+
+<a class="back" asp-action="Index">← Your events</a>
+<h1>@ViewData["Title"]</h1>
+<p>Save the event, add its distance categories, then publish it from your dashboard.</p>
+
 <form asp-action="Edit" method="post" enctype="multipart/form-data" class="panel">
-<div asp-validation-summary="All" role="alert" class="validation"></div><input asp-for="EventId" type="hidden">
-<div class="field-grid"><div><label asp-for="Name">Event name</label><input asp-for="Name" required></div><div><label asp-for="EventType">Activity</label><select asp-for="EventType"><option>Running</option><option>Walking</option><option>Cycling</option></select></div></div>
-<label asp-for="Description"></label><textarea asp-for="Description" rows="4" required></textarea>
-<div class="field-grid"><div><label asp-for="StartDateTime">Starts (event local time)</label><input asp-for="StartDateTime" type="datetime-local" required></div><div><label asp-for="EndDateTime">Ends (event local time)</label><input asp-for="EndDateTime" type="datetime-local" required></div></div>
-<label asp-for="VenueName">Venue</label><input asp-for="VenueName" required><label asp-for="AddressLine1">Street address</label><input asp-for="AddressLine1" required>
-<div class="field-grid"><div><label asp-for="City"></label><input asp-for="City" required></div><div><label asp-for="Province"></label><select asp-for="Province"><option value="">Select province</option>@foreach(var p in new[]{"Eastern Cape","Free State","Gauteng","KwaZulu-Natal","Limpopo","Mpumalanga","North West","Northern Cape","Western Cape"}){<option>@p</option>}</select></div><div><label asp-for="PostalCode">Postal code (optional)</label><input asp-for="PostalCode"></div><div><label asp-for="TimeZoneId">Time zone</label><input asp-for="TimeZoneId" required></div>
-<div><label asp-for="RegistrationOpenUtc">Registration opens (UTC)</label><input asp-for="RegistrationOpenUtc" type="datetime-local" required></div><div><label asp-for="RegistrationCloseUtc">Registration closes (UTC)</label><input asp-for="RegistrationCloseUtc" type="datetime-local" required></div></div>
-<p class="hint">South Africa is UTC+2. For 08:00 South African time, enter 06:00 in the registration fields.</p>
-<label for="banner">Event banner (optional)</label><input type="file" id="banner" name="banner" accept="image/png,image/jpeg"><small>JPEG or PNG, up to 5 MB. Upload goes through the API to Azure Blob Storage.</small>
-@if(Model.BannerUrl != null){<img class="banner-preview" src="@Url.Action("Banner","Home",new{id=Model.EventId})" alt="Current event banner">}
-<div class="form-actions"><button type="submit">Save event</button><a asp-action="Index">Cancel</a></div></form>
+
+    @* ---------- Validation errors + hidden ID ---------- *@
+    <div asp-validation-summary="All" role="alert" class="validation"></div>
+    <input asp-for="EventId" type="hidden">
+
+    @* ---------- Name and activity ---------- *@
+    <div class="field-grid">
+        <div>
+            <label asp-for="Name">Event name</label>
+            <input asp-for="Name" required>
+        </div>
+        <div>
+            <label asp-for="EventType">Activity</label>
+            <select asp-for="EventType">
+                <option>Running</option>
+                <option>Walking</option>
+                <option>Cycling</option>
+            </select>
+        </div>
+    </div>
+
+    @* ---------- Description ---------- *@
+    <label asp-for="Description"></label>
+    <textarea asp-for="Description" rows="4" required></textarea>
+
+    @* ---------- Event dates ---------- *@
+    <div class="field-grid">
+        <div>
+            <label asp-for="StartDateTime">Starts (event local time)</label>
+            <input asp-for="StartDateTime" type="datetime-local" required>
+        </div>
+        <div>
+            <label asp-for="EndDateTime">Ends (event local time)</label>
+            <input asp-for="EndDateTime" type="datetime-local" required>
+        </div>
+    </div>
+
+    @* ---------- Venue ---------- *@
+    <label asp-for="VenueName">Venue</label>
+    <input asp-for="VenueName" required>
+
+    <label asp-for="AddressLine1">Street address</label>
+    <input asp-for="AddressLine1" required>
+
+    @* ---------- Location details + registration window ---------- *@
+    <div class="field-grid">
+        <div>
+            <label asp-for="City"></label>
+            <input asp-for="City" required>
+        </div>
+        <div>
+            <label asp-for="Province"></label>
+            <select asp-for="Province">
+                <option value="">Select province</option>
+                @foreach (var p in new[] { "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal",
+                                "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape" })
+                {
+                    <option>@p</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="PostalCode">Postal code (optional)</label>
+            <input asp-for="PostalCode">
+        </div>
+        <div>
+            <label asp-for="TimeZoneId">Time zone</label>
+            <input asp-for="TimeZoneId" required>
+        </div>
+        <div>
+            <label asp-for="RegistrationOpenUtc">Registration opens (UTC)</label>
+            <input asp-for="RegistrationOpenUtc" type="datetime-local" required>
+        </div>
+        <div>
+            <label asp-for="RegistrationCloseUtc">Registration closes (UTC)</label>
+            <input asp-for="RegistrationCloseUtc" type="datetime-local" required>
+        </div>
+    </div>
+
+    <p class="hint">South Africa is UTC+2. For 08:00 South African time, enter 06:00 in the registration fields.</p>
+
+    @* ---------- Banner upload ---------- *@
+    <label for="banner">Event banner (optional)</label>
+    <input type="file" id="banner" name="banner" accept="image/png,image/jpeg">
+    <small>JPEG or PNG, up to 5 MB. Upload goes through the API to Azure Blob Storage.</small>
+
+    @if (Model.BannerUrl != null)
+    {
+        <img class="banner-preview"
+             src="@Url.Action("Banner", "Home", new { id = Model.EventId })"
+             alt="Current event banner">
+    }
+
+    @* ---------- Actions ---------- *@
+    <div class="form-actions">
+        <button type="submit">Save event</button>
+        <a asp-action="Index">Cancel</a>
+    </div>
+</form>

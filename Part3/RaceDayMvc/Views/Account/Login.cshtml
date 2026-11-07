@@ -1,8 +1,18 @@
 @model LoginForm
 @{ ViewData["Title"] = "Sign in"; }
-<div class="auth-layout"><div><p class="eyebrow">Welcome back</p><h1>Your next race<br><em>starts here.</em></h1><p>Sign in to manage your events, enter a race or see your results.</p><a asp-controller="Home" asp-action="Index">Browse upcoming events ↗</a></div>
-<section class="panel"><h2>Sign in to RaceDay</h2><p>Use your Organiser or Participant account.</p><form asp-action="Login" method="post">
+
+<div class="auth-layout"><div><p class="eyebrow">Welcome back</p>
+    <h1>Your next race<br><em>starts here.</em></h1>
+    
+    <p>Sign in to manage your events, enter a race or see your results.</p><a asp-controller="Home" asp-action="Index">Browse upcoming events ↗</a></div>
+
+<section class="panel">
+    
+    <h2>Sign in to RaceDay</h2>
+    <p>Use your Organiser or Participant account.</p><form asp-action="Login" method="post">
+
 <div asp-validation-summary="All" class="validation" role="alert"></div>
 <label asp-for="Email"></label><input asp-for="Email" autocomplete="username" required>
 <label asp-for="Password"></label><input asp-for="Password" autocomplete="current-password" required>
-<button type="submit">Sign in →</button><p class="form-foot">New to RaceDay? <a asp-action="Register">Create your account</a></p></form></section></div>
+<button type="submit">Sign in →</button>
+<p class="form-foot">New to RaceDay? <a asp-action="Register">Create your account</a></p></form></section></div>

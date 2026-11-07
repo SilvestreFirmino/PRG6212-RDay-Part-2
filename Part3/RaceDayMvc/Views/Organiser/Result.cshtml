@@ -1,9 +1,56 @@
 @model EntryPage
-@{ViewData["Title"]="Record result";}
-<a class="back" asp-action="Enrolments" asp-route-id="@Model.EventId">← Enrolments</a><h1>Record result</h1><p>@Model.ParticipantName · @Model.CategoryName</p>
-<form method="post" asp-action="Result" class="panel"><div asp-validation-summary="All" role="alert" class="validation"></div>
-<input asp-for="EventId" type="hidden"><input asp-for="EnrollmentId" type="hidden"><input asp-for="ResultId" type="hidden"><input asp-for="ParticipantName" type="hidden"><input asp-for="CategoryName" type="hidden">
-<label asp-for="ResultStatus">Finish status</label><select asp-for="ResultStatus"><option>Finished</option><option>DNF</option><option>DNS</option><option>DSQ</option></select>
-<label asp-for="DurationMilliseconds">Finish time (milliseconds)</label><input asp-for="DurationMilliseconds" type="number" min="1"><small>1 second = 1,000 milliseconds. 45 minutes = 2,700,000 milliseconds. Participant results display hours:minutes:seconds.</small>
-<div class="field-grid"><div><label asp-for="OverallPosition">Overall position</label><input asp-for="OverallPosition" min="1"></div><div><label asp-for="CategoryPosition">Category position</label><input asp-for="CategoryPosition" min="1"></div></div>
-<label asp-for="Notes"></label><textarea asp-for="Notes"></textarea><button type="submit">Publish result</button></form>
+@{
+    ViewData["Title"] = "Record result";
+}
+
+<a class="back" asp-action="Enrolments" asp-route-id="@Model.EventId">← Enrolments</a>
+<h1>Record result</h1>
+<p>@Model.ParticipantName · @Model.CategoryName</p>
+
+<form method="post" asp-action="Result" class="panel">
+
+    @* ---------- Validation errors ---------- *@
+    <div asp-validation-summary="All" role="alert" class="validation"></div>
+
+    @* ---------- Hidden fields (sent back with the form) ---------- *@
+    <input asp-for="EventId" type="hidden">
+    <input asp-for="EnrollmentId" type="hidden">
+    <input asp-for="ResultId" type="hidden">
+    <input asp-for="ParticipantName" type="hidden">
+    <input asp-for="CategoryName" type="hidden">
+
+    @* ---------- Finish status ---------- *@
+    <label asp-for="ResultStatus">Finish status</label>
+    <select asp-for="ResultStatus">
+        <option>Finished</option>
+        <option>DNF</option>
+        <option>DNS</option>
+        <option>DSQ</option>
+    </select>
+
+    @* ---------- Finish time ---------- *@
+    <label asp-for="DurationMilliseconds">Finish time (milliseconds)</label>
+    <input asp-for="DurationMilliseconds" type="number" min="1">
+    <small>
+        1 second = 1,000 milliseconds. 45 minutes = 2,700,000 milliseconds.
+        Participant results display hours:minutes:seconds.
+    </small>
+
+    @* ---------- Positions (grid layout) ---------- *@
+    <div class="field-grid">
+        <div>
+            <label asp-for="OverallPosition">Overall position</label>
+            <input asp-for="OverallPosition" min="1">
+        </div>
+        <div>
+            <label asp-for="CategoryPosition">Category position</label>
+            <input asp-for="CategoryPosition" min="1">
+        </div>
+    </div>
+
+    @* ---------- Notes + submit ---------- *@
+    <label asp-for="Notes"></label>
+    <textarea asp-for="Notes"></textarea>
+
+    <button type="submit">Publish result</button>
+</form>
