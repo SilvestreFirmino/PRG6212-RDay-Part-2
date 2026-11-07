@@ -1,0 +1,67 @@
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SQL_PASSWORD:-RaceDay-LocalOnly!2026Strong}"
+    volumes:
+      - sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+  sql-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sql:
+        condition: service_healthy
+    environment:
+      SQL_PASSWORD: "${SQL_PASSWORD:-RaceDay-LocalOnly!2026Strong}"
+    volumes:
+      - ./docs:/scripts:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        SQLCMD=/opt/mssql-tools18/bin/sqlcmd
+        if ! $$SQLCMD -S sql -U sa -P "$$SQL_PASSWORD" -C -b -Q "IF DB_ID('RaceDayDb') IS NULL THROW 51000, 'Database not created yet.', 1" >/dev/null 2>&1; then
+          $$SQLCMD -S sql -U sa -P "$$SQL_PASSWORD" -C -b -i /scripts/raceday-database.sql
+        fi
+        $$SQLCMD -S sql -U sa -P "$$SQL_PASSWORD" -C -b -i /scripts/part3-upgrade.sql
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    environment:
+      AZURITE_ACCOUNTS: "raceday:cmFjZWRheS1sb2NhbC1kZXZlbG9wbWVudC1vbmx5"
+    command: azurite-blob --blobHost 0.0.0.0 --location /data --skipApiVersionCheck
+    volumes:
+      - blob-data:/data
+  api:
+    build:
+      context: .
+      dockerfile: RaceDayApi/Dockerfile
+    depends_on:
+      sql-init:
+        condition: service_completed_successfully
+      azurite:
+        condition: service_started
+    environment:
+      ConnectionStrings__RaceDayDatabase: "Server=sql;Database=RaceDayDb;User Id=sa;Password=${SQL_PASSWORD:-RaceDay-LocalOnly!2026Strong};TrustServerCertificate=True;"
+      AzureStorage__ConnectionString: "${AZURE_STORAGE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=raceday;AccountKey=cmFjZWRheS1sb2NhbC1kZXZlbG9wbWVudC1vbmx5;BlobEndpoint=http://azurite:10000/raceday;}"
+      AzureStorage__Container: event-banners
+    ports:
+      - "127.0.0.1:8081:8080"
+  web:
+    build:
+      context: .
+      dockerfile: Part3/RaceDayMvc/Dockerfile
+    depends_on:
+      - api
+    environment:
+      ApiBaseUrl: http://api:8080/
+      AllowHttp: "true"
+    ports:
+      - "127.0.0.1:8080:8080"
+volumes:
+  sql-data:
+  blob-data:
