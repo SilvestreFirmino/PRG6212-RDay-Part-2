@@ -1,0 +1,9 @@
+@model CategoryPage
+@{ViewData["Title"]=Model.CategoryId==0?"Add category":"Edit category";}
+<h1>@ViewData["Title"]</h1><form method="post" asp-action="Category" class="panel"><div asp-validation-summary="All" role="alert" class="validation"></div>
+<input asp-for="CategoryId" type="hidden"><input asp-for="EventId" type="hidden">
+<label asp-for="Name">Category name</label><input asp-for="Name" required><label asp-for="Description"></label><textarea asp-for="Description"></textarea>
+<div class="field-grid"><div><label asp-for="DistanceKm">Distance (km)</label><input asp-for="DistanceKm" type="number" min=".01" step=".01" required></div><div><label asp-for="EntryFee">Entry fee (R)</label><input asp-for="EntryFee" type="number" min="0" step=".01" required></div>
+<div><label asp-for="Capacity"></label><input asp-for="Capacity" min="1" required></div><div><label asp-for="CategoryStartTime">Start time (optional)</label><input asp-for="CategoryStartTime" type="time" step="1"></div>
+<div><label asp-for="MinimumAge">Minimum age (optional)</label><input asp-for="MinimumAge" min="0"></div><div><label asp-for="MaximumAge">Maximum age (optional)</label><input asp-for="MaximumAge" min="0"></div></div>
+<label class="checkbox"><input asp-for="IsActive"> Available for entry</label><button type="submit">Save category</button> <a asp-action="Categories" asp-route-id="@Model.EventId">Cancel</a></form>
