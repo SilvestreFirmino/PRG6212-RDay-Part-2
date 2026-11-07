@@ -7,6 +7,7 @@ public class RaceEvent
 {
     public int EventId { get; set; }
     public int OrganiserId { get; set; }
+    [MaxLength(2048)] public string? BannerUrl { get; set; }
     [Required, MaxLength(160)] public string Name { get; set; } = string.Empty;
     [Required, MaxLength(2000)] public string Description { get; set; } = string.Empty;
     [Required, MaxLength(20)] public string EventType { get; set; } = string.Empty;

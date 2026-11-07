@@ -180,6 +180,9 @@ namespace RaceDayApi.Data.Migrations
 
             modelBuilder.Entity("RaceDayApi.Models.RaceEvent", b =>
                 {
+                    b.Property<string>("BannerUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
                     b.Property<int>("EventId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");

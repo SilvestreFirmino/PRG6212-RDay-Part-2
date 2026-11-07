@@ -60,6 +60,7 @@ CREATE TABLE Events
 (
     EventId                INT IDENTITY(1,1) PRIMARY KEY,
     OrganiserId            INT NOT NULL,
+    BannerUrl              NVARCHAR(2048) NULL,
     Name                   NVARCHAR(160) NOT NULL,
     Description            NVARCHAR(2000) NOT NULL,
     EventType              NVARCHAR(20) NOT NULL,
