@@ -1,0 +1,6 @@
+@model List<EntryPage>
+@{ViewData["Title"]="Enrolments and results";}
+<a class="back" asp-action="Index">← Your events</a><h1>Enrolments & results</h1><p>Complete the event from the dashboard before publishing finish times.</p>
+<div class="panel table-responsive"><table class="table"><thead><tr><th>Participant</th><th>Category</th><th>Entry status</th><th>Result</th><th>Action</th></tr></thead><tbody>
+@foreach(var e in Model){<tr><td>@e.ParticipantName</td><td>@e.CategoryName</td><td><span class="badge-status @e.Status.ToLowerInvariant()">@e.Status</span></td><td>@(e.ResultStatus ?? "Not recorded") @e.FinishTime</td><td><a asp-action="Result" asp-route-eventId="@e.EventId" asp-route-enrollmentId="@e.EnrollmentId">@(e.ResultId.HasValue ? "Edit result":"Record result")</a></td></tr>}
+</tbody></table>@if(!Model.Any()){<p>No participants have entered this event yet.</p>}</div>
