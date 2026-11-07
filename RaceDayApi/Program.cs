@@ -13,6 +13,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddDbContext<RaceDayDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("RaceDayDatabase")));
 builder.Services.AddScoped<PasswordService>();
+builder.Services.AddScoped<IBannerStorage, BannerStorage>();
 // Session stores the logged-in user's ID and role for later requests.
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
@@ -26,3 +27,5 @@ app.UseHttpsRedirection();
 app.UseSession();
 app.MapControllers();
 app.Run();
+
+public partial class Program { }
